@@ -296,6 +296,25 @@ function silences(wav, noise, minDur) {
   return out;
 }
 
+// 10ms 단위 음량(dB) — 16kHz 모노 16비트 wav를 직접 읽는다
+function envelope(wav) {
+  const buf = fs.readFileSync(wav);
+  let off = 12, data = -1, len = 0;
+  while (off + 8 <= buf.length) {
+    const id = buf.toString('ascii', off, off + 4), n = buf.readUInt32LE(off + 4);
+    if (id === 'data') { data = off + 8; len = Math.min(n, buf.length - data); break; }
+    off += 8 + n + (n & 1);
+  }
+  if (data < 0) die('audio.wav를 읽지 못했어요.', `${ME} transcribe를 다시 실행하세요.`);
+  const hop = 160, env = new Float32Array(Math.floor(len / 2 / hop));
+  for (let k = 0; k < env.length; k++) {
+    let s = 0;
+    for (let j = 0; j < hop; j++) { const v = buf.readInt16LE(data + (k * hop + j) * 2) / 32768; s += v * v; }
+    env[k] = 10 * Math.log10(s / hop + 1e-10);
+  }
+  return env;
+}
+
 // [a,b] 안에서 무음이 아닌(소리가 나는) 부분들
 function voicedParts(a, b, sil) {
   const out = []; let cur = a;
@@ -487,23 +506,26 @@ function cmdApply({ pos, opt }) {
   const hiddenById = Object.fromEntries((edl.suggestions?.hidden || []).map((h) => [h.id, h]));
   const dropWords = (edl.dropWords || []).map(([i0, i1 = i0]) => [Math.max(0, i0), Math.min(i1, W.length - 1)]);
   const dropTimes = (edl.dropTimes || []).map((d) => (typeof d === 'string' ? (hiddenById[d] ? [hiddenById[d].s, hiddenById[d].e] : die(`edl.json의 dropTimes에 없는 틈 번호가 있어요: ${d}`)) : d));
-  // Whisper 단어 시간은 조금씩 어긋나서, 자르는 지점을 0.25초 안의 가장 가까운 조용한 곳으로 옮긴다.
-  // 단, 이웃 단어의 가운데를 넘어가면 그 단어가 잘리므로 [lo, hi] 안에서만 옮긴다.
-  const quiet = silences(path.join(wd, 'audio.wav'), edl.params?.noise ?? -35, 0.05);
-  const snap = (t, lo, hi) => {
-    let best = t, dist = 0.25;
-    for (const [x, y] of quiet) {
-      if (t >= x && t <= y) return t;
-      const p = y < t ? y - 0.02 : x + 0.02;
-      if (p >= lo && p <= hi && Math.abs(p - t) < dist) { dist = Math.abs(p - t); best = p; }
-    }
+  // Whisper 단어 시간은 조금씩 어긋나서, 자르는 지점을 실제 소리에 맞춘다.
+  //  - 지울 말 앞뒤에 무음이 있으면: 소리가 시작·끝나는 곳까지 (늘어진 "음…"의 꼬리까지 지운다)
+  //  - 이어 말하는 중이면: 단어 경계 근처에서 가장 조용한 지점
+  // 이웃 단어 안으로는 넘어가지 않는다.
+  const wav = path.join(wd, 'audio.wav');
+  const quiet = silences(wav, edl.params?.noise ?? -35, 0.05);
+  const env = envelope(wav);
+  const quietest = (a, b) => {
+    let best = a, bv = Infinity;
+    for (let k = Math.max(0, Math.floor(a * 100)); k <= Math.min(env.length - 1, Math.ceil(b * 100)); k++) if (env[k] < bv) { bv = env[k]; best = k / 100 + 0.005; }
     return best;
   };
-  const mid = (i) => (W[i] ? (W[i].s + W[i].e) / 2 : null);
+  const mid = (w) => (w.s + w.e) / 2;
   const wordHole = (i0, i1) => {
-    const s = W[i0].s - 0.02, e = W[i1].e + 0.02;
-    const a = snap(s, mid(i0 - 1) ?? 0, s + 0.25), b = snap(e, e - 0.25, mid(i1 + 1) ?? meta.dur);
-    return a < b ? [a, b] : [s, e];
+    const prev = W[i0 - 1], next = W[i1 + 1], s0 = W[i0].s, e0 = W[i1].e;
+    const qs = quiet.filter(([, y]) => y >= Math.max(s0 - 0.5, prev ? prev.e - 0.03 : 0) && y <= s0 + 0.1).at(-1);
+    const a = qs ? qs[1] - 0.02 : quietest(Math.max(s0 - 0.12, prev ? mid(prev) : 0), s0 + 0.08);
+    const qe = quiet.find(([x]) => x >= e0 - 0.1 && x <= Math.min(e0 + 0.7, next ? next.s + 0.03 : meta.dur));
+    const b = qe ? qe[0] + 0.02 : quietest(e0 - 0.08, Math.min(e0 + 0.12, next ? mid(next) : meta.dur));
+    return a < b ? [a, b] : [s0, e0];
   };
   const holes = [...dropWords.map(([i0, i1]) => wordHole(i0, i1)), ...dropTimes];
   const ranges = subtract(edl.keep, holes);
