@@ -18,7 +18,8 @@ New-Item -ItemType Directory -Force -Path $state | Out-Null
 function Get-NodeMajor {
   $n = Get-Command node -ErrorAction SilentlyContinue
   if (-not $n) { return 0 }
-  try { return [int]((& node -p 'process.versions.node.split(".")[0]') 2>$null) } catch { return 0 }
+  # node -v 출력(v24.1.0)에서 주 버전만 (PowerShell 5.1은 인자 속 큰따옴표를 지워서 node -p 식을 못 씀)
+  try { $v = (& node -v) 2>$null; if ($v -match '^v(\d+)') { return [int]$Matches[1] } else { return 0 } } catch { return 0 }
 }
 
 Write-Host ''
