@@ -17,7 +17,31 @@
         "name": "플랫폼트리"
       },
       "category": "productivity",
-      "keywords": ["video", "editing", "jumpcut", "filler", "korean"]
+      "keywords": [
+        "video",
+        "editing",
+        "jumpcut",
+        "filler",
+        "korean"
+      ]
+    },
+    {
+      "name": "anim-reel",
+      "source": "./plugins/anim-reel",
+      "description": "주제 한 줄로 AI 애니메이션 릴스를 만드는 스킬: 대본 → AI 목소리 → 장면별 애니메이션 → MP4 (2D·3D, 내 영상·녹음 지원)",
+      "version": "1.0.0",
+      "author": {
+        "name": "플랫폼트리"
+      },
+      "category": "productivity",
+      "keywords": [
+        "video",
+        "reels",
+        "animation",
+        "tts",
+        "motion-graphics",
+        "korean"
+      ]
     }
   ]
 }

@@ -1,0 +1,12 @@
+{
+  "name": "anim-reel",
+  "version": "1.0.0",
+  "description": "주제 한 줄로 AI 애니메이션 릴스를 만드는 스킬: 대본 → AI 목소리 → 장면별 애니메이션 → MP4 (2D·3D, 내 영상·녹음 지원)",
+  "author": {
+    "name": "플랫폼트리"
+  },
+  "homepage": "https://github.com/codmsdncodusdn-web/platformtree-claude-skills",
+  "repository": "https://github.com/codmsdncodusdn-web/platformtree-claude-skills",
+  "license": "MIT",
+  "keywords": ["video", "reels", "animation", "tts", "motion-graphics", "korean"]
+}

@@ -1,0 +1,670 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1080, height=1920" />
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script src="data.js"></script>
+  <style>
+    @font-face { font-family: 'Pretendard'; font-weight: 500; src: url(assets/fonts/Pretendard-Medium.woff2) format('woff2'); }
+    @font-face { font-family: 'Pretendard'; font-weight: 600; src: url(assets/fonts/Pretendard-SemiBold.woff2) format('woff2'); }
+    @font-face { font-family: 'Pretendard'; font-weight: 700; src: url(assets/fonts/Pretendard-Bold.woff2) format('woff2'); }
+    @font-face { font-family: 'Pretendard'; font-weight: 800; src: url(assets/fonts/Pretendard-ExtraBold.woff2) format('woff2'); }
+    @font-face { font-family: 'Myeongjo'; font-weight: 800; src: url(assets/fonts/NanumMyeongjo-ExtraBold.ttf) format('truetype'); }
+    @font-face { font-family: 'JBM'; font-weight: 500; src: url(assets/fonts/JetBrainsMono-Medium.ttf) format('truetype'); }
+    :root { --paper: #EDEAE4; --ink: #161514; --red: #E2261C; --muted: #8C867C; --card: #FBFAF7; --line: #D8D3CA; --dark: #191919; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 1080px; height: 1920px; overflow: hidden; background: var(--paper); }
+    #root { position: relative; width: 1080px; height: 1920px; overflow: hidden; color: var(--ink); font-family: 'Pretendard', sans-serif;
+      background-color: var(--paper); background-image: radial-gradient(rgba(60,50,40,.07) 1px, transparent 1.4px); background-size: 7px 7px; }
+    .abs { position: absolute; }
+    .mono { font-family: 'JBM', monospace; }
+    #grain { position: absolute; left: -150px; top: -150px; width: 1380px; height: 2220px; z-index: 30; pointer-events: none; opacity: .55; mix-blend-mode: multiply;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .31 0 0 0 0 .27 0 0 0 .5 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+    #vignette { position: absolute; inset: 0; z-index: 29; pointer-events: none; background: radial-gradient(ellipse at 50% 45%, transparent 55%, rgba(70,60,45,.13) 100%); }
+
+    #chapWrap { position: absolute; left: 84px; top: 88px; height: 34px; width: 600px; z-index: 12; font-size: 25px; color: var(--muted); letter-spacing: .5px; }
+    #stepWrap { position: absolute; right: 84px; top: 88px; height: 34px; width: 300px; z-index: 12; font-size: 25px; color: var(--muted); text-align: right; letter-spacing: 1px; }
+    #chapWrap span, #stepWrap span { position: absolute; left: 0; right: 0; top: 0; white-space: nowrap; }
+
+    #cap { position: absolute; left: 84px; top: 168px; width: 912px; z-index: 12; }
+    .grp { position: absolute; left: 0; top: 0; width: 912px; font-size: 74px; line-height: 1.2; font-weight: 700; letter-spacing: -2px; word-break: keep-all; }
+    .w { display: inline-block; margin-right: .24em; white-space: nowrap; }
+    .em { font-family: 'Myeongjo', serif; color: var(--red); font-size: 1.03em; letter-spacing: -1px; display: inline-block; transform: skewX(-9deg); }
+
+    #stage { position: absolute; inset: 0; z-index: 5; }
+    #front { position: absolute; inset: 0; z-index: 8; pointer-events: none; }
+    #marks { position: absolute; left: 0; top: 0; z-index: 9; pointer-events: none; overflow: visible; }
+
+    .dots { position: absolute; background-image: radial-gradient(circle, #1f1d1a 1.7px, transparent 2.2px); background-size: 7px 7px; opacity: .55; }
+    .card { position: absolute; background: var(--card); border: 2px solid #1d1c1a; border-radius: 30px; overflow: hidden; }
+    .phone { position: absolute; background: #121212; border-radius: 58px; padding: 13px; }
+    .screen { position: relative; width: 100%; height: 100%; border-radius: 46px; overflow: hidden; background: var(--paper);
+      background-image: radial-gradient(rgba(60,50,40,.08) 1px, transparent 1.4px); background-size: 6px 6px; }
+    .notch { position: absolute; left: 50%; top: 14px; width: 110px; height: 30px; margin-left: -55px; background: #121212; border-radius: 20px; z-index: 3; }
+    .win { position: absolute; background: var(--dark); border-radius: 28px; overflow: hidden; color: #fff; border: 2px solid #0e0e0e; }
+    .winbar { height: 58px; display: flex; align-items: center; gap: 12px; padding: 0 24px; border-bottom: 1px solid #2a2a2a; font-family: 'JBM', monospace; font-size: 22px; color: #8d8d8d; }
+    .winbar i { width: 15px; height: 15px; border-radius: 50%; background: #3a3a3a; display: inline-block; }
+    .pill { position: absolute; background: var(--red); color: #fff; font-weight: 800; border-radius: 999px; display: flex; align-items: center; justify-content: center; white-space: nowrap; }
+    .tile { position: absolute; background: #141414; border-radius: 40px; color: #fff; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+    .tile .n { font-size: 170px; line-height: 1; margin-top: -14px; }
+    .tile .d { position: absolute; bottom: 26px; left: 0; right: 0; display: flex; gap: 10px; justify-content: center; }
+    .tile .d b { width: 14px; height: 14px; border-radius: 50%; background: #555; display: block; }
+    .tile .d b.on { background: var(--red); }
+    .lbl { position: absolute; font-size: 38px; font-weight: 700; text-align: center; white-space: nowrap; }
+    .dash { position: absolute; border: 4px dashed #B9B3A8; border-radius: 40px; }
+    .row { position: absolute; left: 28px; right: 28px; height: 84px; border: 2px solid #E1DCD3; border-radius: 18px; background: #fff; display: flex; align-items: center; padding: 0 20px; gap: 16px; font-size: 32px; font-weight: 700; color: #B7B1A6; }
+    .row .ic { width: 46px; height: 46px; border-radius: 12px; background: #EEEAE3; color: #9c968c; font-size: 24px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+    .row .st { margin-left: auto; width: 40px; height: 40px; position: relative; }
+    .spin { position: absolute; inset: 0; border-radius: 50%; border: 5px solid #E3DED6; border-top-color: var(--red); }
+    .chk { position: absolute; inset: 0; border-radius: 50%; background: #161514; display: flex; align-items: center; justify-content: center; }
+    .crow { position: absolute; left: 40px; right: 40px; height: 64px; display: flex; align-items: center; gap: 22px; font-size: 32px; font-weight: 600; color: #e9e9e9; }
+    .crow .st { width: 38px; height: 38px; position: relative; flex: none; }
+    .crow .spin { border-color: #333; border-top-color: #fff; }
+    .crow .chk { background: #fff; }
+    .crow .v { margin-left: auto; font-family: 'JBM', monospace; font-size: 24px; color: #7d7d7d; }
+    .cm { position: absolute; left: 34px; right: 34px; height: 82px; display: flex; align-items: center; gap: 18px; }
+    .cm .av { width: 56px; height: 56px; border-radius: 50%; flex: none; }
+    .cm .h { font-family: 'JBM', monospace; font-size: 20px; color: #8a8a8a; }
+    .cm .t { font-size: 31px; font-weight: 600; color: #f2f2f2; }
+    .bar { position: absolute; bottom: 0; width: 20px; border-radius: 4px 4px 0 0; background: #2a2826; }
+
+    #char { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; z-index: 7; pointer-events: none; }
+    #charIdle, #charPop, #charBob { position: absolute; left: 110px; top: 1098px; width: 860px; height: 1129px; transform-origin: 50% 100%; }
+    #charPop, #charBob { left: 0; top: 0; }
+    .pose { position: absolute; inset: 0; }
+    .pose .mouth { position: absolute; left: 0; top: 0; z-index: 2; overflow: visible; }
+    .pose img { position: absolute; left: 0; top: 0; width: 860px; height: 1129px; }
+    .pose .psh { position: absolute; left: 16px; top: 8px; width: 860px; height: 1129px; opacity: .5;
+      background-image: radial-gradient(circle, #1f1d1a 1.8px, transparent 2.3px); background-size: 8px 8px;
+      -webkit-mask-size: 100% 100%; mask-size: 100% 100%; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; }
+    #halftone { position: absolute; left: 0; top: 0; z-index: 25; pointer-events: none; }
+
+    /* 내 영상(cam): 전체 화면 또는 아래 작은 창. 움직임은 #cam에(scale·y·borderRadius) */
+    #cam { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; z-index: 6; overflow: hidden; pointer-events: none; background: #111; }
+    #cam .camv { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; object-fit: cover; }
+    #camShade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.58) 0%, rgba(0,0,0,.12) 30%, rgba(0,0,0,0) 62%, rgba(0,0,0,.25) 100%); }
+    #root[data-cam="full"] #cap .w { color: #fff !important; text-shadow: 0 3px 0 rgba(0,0,0,.55), 0 0 22px rgba(0,0,0,.5); }
+    #root[data-cam="full"] #cap .em { color: #FFD24A; }
+    #root[data-cam="full"] #chapWrap, #root[data-cam="full"] #stepWrap { color: rgba(255,255,255,.8); }
+  </style>
+</head>
+<body>
+  <div id="root" data-composition-id="main" data-start="0" data-duration="{{DUR}}" data-width="1080" data-height="1920">
+    <div id="stage"></div>
+    <div id="cam"><!--CAM--><div id="camShade"></div></div>
+    <div id="char"><div id="charIdle"><div id="charPop"><div id="charBob"></div></div></div></div>
+    <div id="front"></div>
+    <svg id="marks" width="1080" height="1920" viewBox="0 0 1080 1920"></svg>
+    <div id="chapWrap" class="mono"></div>
+    <div id="stepWrap" class="mono"></div>
+    <div id="cap"></div>
+    <svg id="halftone" width="1080" height="1920" viewBox="0 0 1080 1920"></svg>
+    <div id="vignette"></div>
+    <div id="grain"></div>
+    <!--AUDIO-->
+  </div>
+  <script>
+  (function () {
+    const R = window.REEL, DUR = R.dur;
+    const tl = gsap.timeline({ paused: true });
+    const SS = R.sentences;
+    // 문장·단어 번호가 범위를 넘으면 가장 가까운 것으로 (장면 하나가 틀려도 영상 전체가 멈추지 않게)
+    const si = (i) => Math.max(0, Math.min(SS.length - 1, i));
+    const wd = (i, j) => { const ws = SS[si(i)].words; return ws[Math.max(0, Math.min(ws.length - 1, j < 0 ? ws.length + j : j))]; };
+    const S = (i) => (i >= SS.length ? DUR : SS[si(i)].start), E = (i) => SS[si(i)].end;
+    const W = (i, j) => wd(i, j).s;
+    const WE = (i, j) => wd(i, j).e;
+    const RED = '#E2261C', INK = '#161514';
+    const stage = document.getElementById('stage'), front = document.getElementById('front');
+    const marks = document.getElementById('marks');
+    const NS = 'http://www.w3.org/2000/svg';
+    const rnd = (k) => { const x = Math.sin(k * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
+
+    function el(tag, cls, html, parent) { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; (parent || stage).appendChild(e); return e; }
+    function box(x, y, w, h, cls, parent, html) { const e = el('div', 'abs ' + (cls || ''), html, parent); Object.assign(e.style, { left: x + 'px', top: y + 'px', width: w + 'px', height: h + 'px' }); return e; }
+    // 하프톤 그림자가 깔린 래퍼(움직임은 래퍼에)
+    function wrap(x, y, w, h, r, parent, off = 13) { const o = box(x, y, w, h, '', parent); const d = box(off, off, w, h, 'dots', o); d.style.borderRadius = r + 'px'; gsap.set(o, { autoAlpha: 0 }); return o; }
+    function show(o, t, from = {}, dur = 0.45, ease = 'back.out(1.5)') { tl.fromTo(o, { autoAlpha: 0, y: 70, ...from }, { autoAlpha: 1, y: 0, x: 0, rotation: o._rot || 0, scale: 1, duration: dur, ease }, t); }
+    function hide(o, t, to = {}, dur = 0.3) { tl.to(o, { autoAlpha: 0, y: -40, duration: dur, ease: 'power2.in', ...to }, t); }
+    function pop(o, t, rot = 0, dur = 0.4) { tl.fromTo(o, { autoAlpha: 0, scale: 0.3, rotation: rot - 12 }, { autoAlpha: 1, scale: 1, rotation: rot, duration: dur, ease: 'back.out(2.6)' }, t); }
+    function svgEl(tag, attrs, parent) { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); (parent || marks).appendChild(e); return e; }
+    // 손으로 그은 선
+    function draw(d, t, dur = 0.3, width = 13, color = RED, parent) {
+      const p = svgEl('path', { d, fill: 'none', stroke: color, 'stroke-width': width, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, parent);
+      const L = p.getTotalLength(); gsap.set(p, { strokeDasharray: L, strokeDashoffset: L, autoAlpha: 0 });
+      tl.set(p, { autoAlpha: 1 }, t);
+      tl.to(p, { strokeDashoffset: 0, duration: dur, ease: 'power1.inOut' }, t);
+      return p;
+    }
+    function handCircle(cx, cy, rx, ry, seed) {
+      let d = ''; const N = 46;
+      for (let i = 0; i <= N * 1.13; i++) {
+        const a = -2.1 + (i / N) * Math.PI * 2, k = 1 + 0.035 * Math.sin(i * 0.9 + seed) + 0.05 * (i / N);
+        d += (i ? 'L' : 'M') + (cx + rx * k * Math.cos(a)).toFixed(1) + ' ' + (cy + ry * k * Math.sin(a)).toFixed(1);
+      }
+      return d;
+    }
+    function wobble(x1, y1, x2, y2, seed, amp = 6) {
+      const n = 10; let d = '';
+      for (let i = 0; i <= n; i++) { const f = i / n, j = i && i < n ? (rnd(seed + i) - 0.5) * amp : 0; d += (i ? 'L' : 'M') + (x1 + (x2 - x1) * f).toFixed(1) + ' ' + (y1 + (y2 - y1) * f + j).toFixed(1); }
+      return d;
+    }
+    function counter(span, from, to, t, dur, fmt) { const o = { v: from }; span.textContent = fmt(from); tl.to(o, { v: to, duration: dur, ease: 'power1.out', onUpdate: () => { span.textContent = fmt(o.v); } }, t); }
+    function spinner(sp, t0, t1) { tl.fromTo(sp, { rotation: 0 }, { rotation: 360 * Math.max(1, Math.round((t1 - t0) / 0.7)), duration: Math.max(0.1, t1 - t0), ease: 'none' }, t0); }
+    const CHECK = '<svg width="22" height="22" viewBox="0 0 22 22"><path d="M4 11.5l4.5 4.5L18 6" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    const CHECK_D = '<svg width="20" height="20" viewBox="0 0 22 22"><path d="M4 11.5l4.5 4.5L18 6" fill="none" stroke="#111" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    const CUP = '<svg viewBox="0 0 120 140" width="100%" height="100%"><path d="M38 14c-6 8 6 12 0 22M60 10c-6 8 6 12 0 22M82 14c-6 8 6 12 0 22" fill="none" stroke="#161514" stroke-width="4" stroke-linecap="round"/><path d="M18 46h84l-9 84H27z" fill="#fff" stroke="#161514" stroke-width="5" stroke-linejoin="round"/><path d="M22 74h76l-3 28H25z" fill="#E2261C"/><rect x="12" y="40" width="96" height="12" rx="5" fill="#161514"/></svg>';
+    const CHART = '<svg viewBox="0 0 140 130" width="100%" height="100%"><rect x="4" y="4" width="132" height="122" rx="18" fill="#fff" stroke="#161514" stroke-width="5"/><rect x="24" y="78" width="18" height="30" rx="3" fill="#161514"/><rect x="50" y="62" width="18" height="46" rx="3" fill="#161514"/><rect x="76" y="46" width="18" height="62" rx="3" fill="#161514"/><rect x="102" y="26" width="18" height="82" rx="3" fill="#E2261C"/><path d="M22 66L58 42l22 10 40-34" fill="none" stroke="#E2261C" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    const HEART = '<svg viewBox="0 0 120 120" width="100%" height="100%"><circle cx="60" cy="60" r="56" fill="#E2261C"/><path d="M60 92C36 74 26 62 26 48c0-11 8-19 18-19 7 0 12 4 16 10 4-6 9-10 16-10 10 0 18 8 18 19 0 14-10 26-34 44z" fill="#fff"/></svg>';
+    const MIC = '<svg viewBox="0 0 40 40" width="40" height="40"><rect x="14" y="5" width="12" height="20" rx="6" fill="#fff"/><path d="M9 19a11 11 0 0 0 22 0M20 30v6" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/></svg>';
+
+    // ───────── 배경 그레인: 2프레임마다 위치를 바꿔 종이가 살아 있게
+    const grain = document.getElementById('grain');
+    for (let k = 0, t = 0; t < DUR; k++, t += 1 / 15) tl.set(grain, { x: Math.round(rnd(k) * 140 - 70), y: Math.round(rnd(k + 77) * 140 - 70) }, t);
+
+    // ───────── 캐릭터 리그
+    // 캐릭터: assets/char/<포즈>.png (tools/prep_character.py로 준비). 없으면 캐릭터 없이 렌더
+    const HAS_CHAR = !!R.character;
+    const POSES = HAS_CHAR ? R.poses : [];
+    if (!HAS_CHAR) document.getElementById('char').style.display = 'none';
+    const bob = document.getElementById('charBob'), popEl = document.getElementById('charPop'), idle = document.getElementById('charIdle');
+    const poseEl = {};
+    POSES.forEach((n) => {
+      const p = el('div', 'pose', null, bob);
+      const sh = el('div', 'psh', null, p); sh.style.webkitMaskImage = sh.style.maskImage = `url(assets/char/${n}.png)`;
+      const im = el('img', '', null, p); im.src = `assets/char/${n}.png`;
+      gsap.set(p, { autoAlpha: 0 }); poseEl[n] = p;
+      // 입 리그: 그려진 입을 피부색으로 덮고 그 위에 말하는 입을 그린다 (좌표는 포즈 이미지 px)
+      const m = R.mouths && R.mouths[n];
+      if (m) {
+        const sv = svgEl('svg', { class: 'mouth', viewBox: '0 0 960 1260', width: 860, height: 1129 }, p);
+        const sk = `rgb(${m.skin.join(',')})`;
+        const defs = svgEl('defs', {}, sv);
+        const fl = svgEl('filter', { id: `mf_${n}`, x: '-20%', y: '-20%', width: '140%', height: '140%' }, defs); svgEl('feGaussianBlur', { stdDeviation: 1.6 }, fl);
+        const cp = svgEl('clipPath', { id: `mc_${n}` }, defs);
+        const g = svgEl('g', { transform: `translate(${m.cx} ${m.cy + 2}) rotate(${m.angle})` }, sv);
+        svgEl('rect', { x: -(m.wFull / 2 + 14), y: -(m.h / 2 + 12), width: m.wFull + 28, height: m.h + 28, rx: 22, fill: sk, filter: `url(#mf_${n})` }, g);
+        const cpath = svgEl('path', {}, cp);
+        const lip = svgEl('path', { fill: 'none', stroke: '#d48a7f', 'stroke-width': 5, 'stroke-linecap': 'round', opacity: 0.55 }, g);
+        const body = svgEl('path', { fill: '#6b2627', stroke: '#3d2522', 'stroke-width': 2.6, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }, g);
+        const inner = svgEl('g', { 'clip-path': `url(#mc_${n})` }, g);
+        const teeth = svgEl('rect', { fill: '#fbf7f2' }, inner);
+        const tongue = svgEl('ellipse', { fill: '#d4706e' }, inner);
+        poseEl[n]._mouth = { m, cpath, lip, body, teeth, tongue, Wb: m.wFull * 0.8, Hb: 34 };
+      }
+    });
+    // 프레임마다 입 모양 갱신 (build.mjs가 음절 모음 + 목소리 크기로 계산한 값)
+    const MO = R.mouth;
+    const drawMouth = (k, o, w, r) => {
+      const M = k._mouth; if (!M) return;
+      const W = M.Wb * w * (1 - 0.28 * r), H = M.Hb * o * (1 + 0.35 * r), c0 = -2.2 * (1 - Math.min(1, o * 2));
+      const up = -H * 0.62 - 0.6, dn = H * 1.18 + 1.2;
+      const d = `M${-W / 2} ${c0}C${-W / 4} ${up} ${W / 4} ${up} ${W / 2} ${c0}C${W / 4} ${dn} ${-W / 4} ${dn} ${-W / 2} ${c0}Z`;
+      M.body.setAttribute('d', d); M.cpath.setAttribute('d', d);
+      const ly = dn * 0.82 + 7;
+      M.lip.setAttribute('d', `M${-W * 0.3} ${ly}Q0 ${ly + 6} ${W * 0.3} ${ly}`);
+      M.teeth.setAttribute('x', -W / 2); M.teeth.setAttribute('width', W); M.teeth.setAttribute('y', up * 0.6 - 2); M.teeth.setAttribute('height', H > 7 ? Math.min(H * 0.3, 7) + 2 : 0);
+      M.tongue.setAttribute('cx', 0); M.tongue.setAttribute('cy', dn * 0.72); M.tongue.setAttribute('rx', W * 0.27); M.tongue.setAttribute('ry', Math.max(0, H * 0.32));
+    };
+    const lipFrame = (i) => { i = Math.max(0, Math.min(MO.o.length - 1, i)); POSES.forEach((n) => drawMouth(poseEl[n], MO.o[i], MO.w[i], MO.r[i])); };
+    if (MO && HAS_CHAR) {
+      lipFrame(0);
+      const lp = { f: 0 };
+      tl.to(lp, { f: MO.o.length - 1, duration: (MO.o.length - 1) / (R.fps || 30), ease: 'none', onUpdate: () => lipFrame(Math.round(lp.f)) }, 0);
+    }
+    if (HAS_CHAR) tl.fromTo('#char', { y: 620 }, { y: 0, duration: 0.65, ease: 'back.out(1.15)' }, 0.02);
+    tl.fromTo(idle, { y: 0 }, { y: -9, duration: 1.7, ease: 'sine.inOut', repeat: Math.ceil(DUR / 1.7), yoyo: true }, 0);
+    tl.fromTo(idle, { rotation: -0.6 }, { rotation: 0.7, duration: 2.3, ease: 'sine.inOut', repeat: Math.ceil(DUR / 2.3), yoyo: true, immediateRender: false }, 0);
+    let cur = null, side = 1;
+    const poseAt = (name, t) => {
+      if (!HAS_CHAR || cur === name) return;
+      if (!poseEl[name]) name = poseEl.neutral ? 'neutral' : POSES[0];
+      if (!name || cur === name) return;
+      if (cur) tl.set(poseEl[cur], { autoAlpha: 0 }, t);
+      tl.set(poseEl[name], { autoAlpha: 1 }, t);
+      if (cur) tl.fromTo(popEl, { y: 16, scaleY: 0.975, rotation: side * 1.4 }, { y: 0, scaleY: 1, rotation: 0, duration: 0.38, ease: 'back.out(3)', immediateRender: false }, t);
+      side *= -1; cur = name;
+    };
+    poseAt('neutral', 0);
+    SS.forEach((s, i) => s.poses.forEach(([n, wi]) => poseAt(n, Math.max(0.05, (wi === 0 ? s.start - 0.12 : W(i, wi) - 0.08)))));
+    // 말할 때 고개가 살짝 끄덕
+    SS.forEach((s) => s.words.forEach((w, k) => {
+      const a = 5 + (k % 3) * 2;
+      tl.to(bob, { y: -a, duration: 0.08, ease: 'power1.out' }, w.s).to(bob, { y: 0, duration: 0.17, ease: 'power1.in' }, w.s + 0.08);
+    }));
+
+    // ───────── 상단 라벨
+    const chapWrap = document.getElementById('chapWrap'), stepWrap = document.getElementById('stepWrap');
+    let lastChap = null, lastStep = null, chapSpan = null, stepSpan = null;
+    SS.forEach((s) => {
+      const t = Math.max(0.05, s.start - 0.15);
+      if (s.chap !== lastChap) {
+        const sp = el('span', '', '// ' + s.chap, chapWrap); gsap.set(sp, { autoAlpha: 0 });
+        if (chapSpan) tl.to(chapSpan, { autoAlpha: 0, x: -10, duration: 0.15 }, t);
+        tl.fromTo(sp, { autoAlpha: 0, x: 14 }, { autoAlpha: 1, x: 0, duration: 0.25 }, t + 0.1);
+        chapSpan = sp; lastChap = s.chap;
+      }
+      if (s.step !== lastStep) {
+        if (stepSpan) tl.to(stepSpan, { autoAlpha: 0, duration: 0.15 }, t);
+        if (s.step) { const sp = el('span', '', s.step, stepWrap); gsap.set(sp, { autoAlpha: 0 }); tl.fromTo(sp, { autoAlpha: 0, y: -8 }, { autoAlpha: 1, y: 0, duration: 0.25 }, t + 0.1); stepSpan = sp; } else stepSpan = null;
+        lastStep = s.step;
+      }
+    });
+
+    // ───────── 자막 (단어가 말하는 순간 올라옴)
+    const cap = document.getElementById('cap');
+    const fmtWord = (raw) => raw.replace(/\*([^*]+)\*/g, '<span class="em">$1</span>').replace(/\*/g, '');
+    SS.forEach((s, i) => {
+      const groups = [];
+      for (let g = 0; g < s.groups; g++) { const d = el('div', 'grp', null, cap); gsap.set(d, { autoAlpha: 0 }); groups.push(d); }
+      let prevChunk = -1, prevG = -1;
+      s.words.forEach((w) => {
+        if (w.g !== prevG) prevChunk = -1;
+        if (prevChunk !== -1 && w.chunk !== prevChunk) el('br', '', null, groups[w.g]);
+        const sp = el('span', 'w', fmtWord(w.raw), groups[w.g]);
+        tl.fromTo(sp, { autoAlpha: 0, y: 22, color: '#B4AEA4' }, { autoAlpha: 1, y: 0, duration: 0.2, ease: 'power3.out' }, w.s - 0.03);
+        tl.to(sp, { color: INK, duration: 0.18 }, w.s + 0.1);
+        prevChunk = w.chunk; prevG = w.g;
+      });
+      groups.forEach((d, g) => {
+        const first = s.words.find((w) => w.g === g);
+        tl.set(d, { autoAlpha: 1 }, first.s - 0.05);
+        const nextFirst = s.words.find((w) => w.g === g + 1);
+        const off = nextFirst ? nextFirst.s - 0.05 : (SS[i + 1] ? SS[i + 1].start - 0.05 : DUR + 1);
+        if (off < DUR) tl.to(d, { autoAlpha: 0, y: -16, duration: 0.12 }, off - 0.1);
+      });
+    });
+
+    // ───────── 내 영상 (timing.json "cam": true + 문장별 "cam": "full" | "pip")
+    {
+      const camBox = document.getElementById('cam'), rootEl = document.getElementById('root');
+      if (!R.cam) camBox.style.display = 'none';
+      else {
+        gsap.set(camBox, { autoAlpha: 0, transformOrigin: '50% 100%' });
+        const ST = { full: { scale: 1, y: 0, borderRadius: 0 }, pip: { scale: 0.42, y: -120, borderRadius: 90 } };
+        let prev = null;
+        SS.forEach((s, i) => {
+          const m = ST[s.cam] ? s.cam : null; if (m === prev) return;
+          const t = i === 0 ? 0 : Math.max(0, s.start - 0.15);
+          if (!m) tl.to(camBox, { autoAlpha: 0, duration: 0.2 }, t);
+          else if (!prev) tl.fromTo(camBox, { autoAlpha: 0, ...ST[m], scale: ST[m].scale * 1.06 }, { autoAlpha: 1, ...ST[m], duration: i === 0 ? 0.01 : 0.3, ease: 'power2.out', immediateRender: false }, t);
+          else tl.to(camBox, { ...ST[m], duration: 0.38, ease: 'power3.inOut' }, t);
+          tl.set(rootEl, { attr: { 'data-cam': m || '' } }, t);
+          if (HAS_CHAR) tl.to('#char', { autoAlpha: m ? 0 : 1, duration: 0.2 }, t);
+          prev = m;
+        });
+      }
+    }
+
+    // ───────── 하프톤 전환
+    const ht = document.getElementById('halftone');
+    const cells = [];
+    for (let r = 0; r < 24; r++) for (let c = 0; c < 13; c++) cells.push(svgEl('circle', { cx: c * 86 + 24, cy: r * 84 + 10, r: 0, fill: '#161514' }, ht));
+    function halftone(t) {
+      cells.forEach((cEl) => {
+        const cx = +cEl.getAttribute('cx'), cy = +cEl.getAttribute('cy');
+        const d = (cx / 1080) * 0.35 + (1 - cy / 1920) * 0.65;
+        tl.to(cEl, { attr: { r: 64 }, duration: 0.24, ease: 'power2.in' }, t + d * 0.24);
+        tl.to(cEl, { attr: { r: 0 }, duration: 0.3, ease: 'power2.out' }, t + 0.42 + d * 0.26);
+      });
+      return t + 0.4; // 화면이 다 덮인 순간
+    }
+
+    // ═════════ 장면 1: "직접 편집할 필요 없습니다" — 편집 프로그램 카드에 X
+    {
+      const t0 = S(0) - 0.12;
+      const o = wrap(130, 500, 820, 590, 30); o._rot = -1.5;
+      const c = box(0, 0, 820, 590, 'card', o);
+      box(0, 0, 820, 62, 'mono', c, '<div style="display:flex;gap:10px;align-items:center;height:62px;padding:0 26px;font-size:21px;color:#8c867c;border-bottom:2px solid #E4DFD6"><i style="width:14px;height:14px;border-radius:50%;background:#E0DBD2;display:inline-block"></i><i style="width:14px;height:14px;border-radius:50%;background:#E0DBD2;display:inline-block"></i><i style="width:14px;height:14px;border-radius:50%;background:#E0DBD2;display:inline-block"></i><span style="margin-left:14px">편집_최종_진짜최종_v7.prproj</span></div>');
+      const pv = box(30, 86, 760, 250, '', c); pv.style.cssText += 'background:#E5E1D9;border-radius:16px';
+      box(352, 92, 56, 66, '', pv, '<svg width="56" height="66" viewBox="0 0 56 66"><path d="M6 4l46 29L6 62z" fill="#C9C3B8"/></svg>');
+      box(560, 206, 190, 30, 'mono', pv, '<div style="font-size:21px;color:#9b958a;text-align:right">00:00:12:04</div>');
+      const tracks = [['V2', [[40, 120, '#CFC9BE'], [200, 90, '#CFC9BE'], [420, 150, '#CFC9BE']]], ['V1', [[0, 210, '#B6AFA3'], [222, 160, '#E8A9A2'], [394, 260, '#B6AFA3']]], ['A1', [[0, 300, '#D8D2C6'], [312, 340, '#D8D2C6']]]];
+      tracks.forEach(([nm, clips], k) => {
+        box(30, 362 + k * 64, 60, 50, 'mono', c, `<div style="font-size:20px;color:#9b958a;line-height:50px">${nm}</div>`);
+        clips.forEach(([x, w, col]) => { const b = box(96 + x, 362 + k * 64, w, 50, '', c); b.style.cssText += `background:${col};border-radius:9px`; });
+      });
+      const ph = box(150, 348, 4, 210, '', c); ph.style.background = RED;
+      show(o, t0, { rotation: 4 });
+      tl.fromTo(ph, { x: 0 }, { x: 560, duration: Math.max(0.5, E(0) - t0), ease: 'none' }, t0);
+      const ws = W(0, 5);
+      const x1 = draw('M232 548 C 400 700, 620 860, 862 1046', ws, 0.2, 18);
+      const x2 = draw('M858 552 C 690 700, 470 880, 222 1040', ws + 0.17, 0.2, 18);
+      tl.fromTo(o, { x: 0 }, { x: 10, duration: 0.05, repeat: 3, yoyo: true, ease: 'none', immediateRender: false }, ws + 0.38);
+      const tOut = S(1) - 0.15;
+      tl.to(o, { x: -760, rotation: -12, autoAlpha: 0, duration: 0.45, ease: 'power2.in' }, tOut);
+      tl.to([x1, x2], { x: -760, autoAlpha: 0, duration: 0.45, ease: 'power2.in' }, tOut);
+    }
+
+    // ═════════ 장면 2–3: "이 영상도 클로드 코드로" + "목소리만 제가"
+    {
+      const t0 = S(1) - 0.05;
+      const o = wrap(420, 440, 370, 720, 58); o._rot = -3;
+      const ph = box(0, 0, 370, 720, 'phone', o); const sc = el('div', 'screen', null, ph); el('div', 'notch', null, sc);
+      box(26, 70, 300, 24, 'mono', sc, '<div style="font-size:13px;color:#8c867c">// 01 · 이 영상도</div>');
+      box(26, 104, 310, 120, '', sc, '<div style="font-size:29px;font-weight:700;line-height:1.22;letter-spacing:-.8px">여러분, 이제 <span class="em">릴스도</span><br>직접 편집할 <span class="em">필요</span> 없습니다.</div>');
+      if (HAS_CHAR) { const mini = el('img', 'abs', null, sc); mini.src = 'assets/char/neutral.png'; Object.assign(mini.style, { left: '-8px', top: '398px', width: '360px', height: '473px' }); }
+      show(o, t0, { y: 900, rotation: 8 }, 0.6, 'power3.out');
+      // 터미널 칩
+      const ch = wrap(110, 905, 440, 170, 28, front); ch._rot = 2;
+      const win = box(0, 0, 440, 170, 'win', ch);
+      el('div', 'winbar', '<i></i><i></i><i></i><span style="margin-left:10px">claude</span>', win);
+      const line = box(26, 80, 400, 50, 'mono', win, '<div style="font-size:30px;color:#fff;white-space:nowrap"><span style="color:#E2261C">›</span> 릴스 만들어줘<span class="caret" style="display:inline-block;width:14px;height:32px;background:#fff;margin-left:6px;vertical-align:-5px"></span></div>');
+      show(ch, W(1, 5) - 0.2, { x: -260, y: 0, rotation: -6 }, 0.4, 'power3.out');
+      const caret = line.querySelector('.caret'); tl.fromTo(caret, { autoAlpha: 1 }, { autoAlpha: 0, duration: 0.01, repeat: 9, yoyo: true, repeatDelay: 0.38, ease: 'none' }, W(1, 5));
+      const p = box(140, 820, 330, 104, 'pill', front, '<span style="font-size:48px">클로드 코드</span>'); gsap.set(p, { autoAlpha: 0 });
+      pop(p, W(1, 5), -6);
+      // 목소리 카드
+      const v = wrap(560, 470, 430, 230, 28, front); v._rot = 2.5;
+      const vc = box(0, 0, 430, 230, 'card', v);
+      box(26, 28, 70, 70, '', vc, '<div style="width:70px;height:70px;border-radius:50%;background:#E2261C;display:flex;align-items:center;justify-content:center">' + MIC + '</div>');
+      box(116, 30, 290, 70, '', vc, '<div style="font-size:31px;font-weight:800;line-height:1.1">내 목소리.m4a</div><div class="mono" style="font-size:20px;color:#8c867c;margin-top:8px">녹음만 직접</div>');
+      const rec = box(352, 36, 54, 24, 'mono', vc, '<div style="font-size:18px;color:#E2261C;font-weight:500">● REC</div>');
+      const bars = box(26, 128, 380, 76, '', vc);
+      for (let k = 0; k < 30; k++) {
+        const b = box(k * 12.8, 0, 7, 76, '', bars); b.style.cssText += 'background:#161514;border-radius:4px;transform-origin:50% 50%';
+        tl.fromTo(b, { scaleY: 0.12 }, { scaleY: 0.25 + rnd(k) * 0.75, duration: 0.16 + rnd(k + 9) * 0.12, repeat: Math.ceil((E(2) - S(2) + 0.6) / 0.2), yoyo: true, ease: 'sine.inOut' }, S(2) + k * 0.012);
+      }
+      tl.fromTo(rec, { autoAlpha: 1 }, { autoAlpha: 0.15, duration: 0.3, repeat: 6, yoyo: true, ease: 'none' }, S(2));
+      show(v, S(2) - 0.1, { x: 320, y: 0, rotation: 10 }, 0.45, 'power3.out');
+      const u = draw(wobble(100, 268, 380, 272, 3, 7), W(2, 2), 0.3, 11);
+      const tOut = S(3) - 0.15;
+      tl.to(o, { y: 1000, rotation: 10, autoAlpha: 0, duration: 0.45, ease: 'power2.in' }, tOut);
+      tl.to([ch, p], { x: -500, autoAlpha: 0, duration: 0.35, ease: 'power2.in' }, tOut);
+      tl.to([v, u], { x: 500, autoAlpha: 0, duration: 0.35, ease: 'power2.in' }, tOut);
+    }
+
+    // ═════════ 장면 4: "딱 2단계" — 타일 1, 2 (이후 STEP 배지로 이어짐)
+    const tiles = [];
+    {
+      const t0 = S(3) - 0.05;
+      const note = box(84, 500, 600, 40, 'mono', stage, '<div style="font-size:25px;color:#8c867c">// 필요한 건 이게 전부</div>'); gsap.set(note, { autoAlpha: 0 });
+      tl.fromTo(note, { autoAlpha: 0, x: -20 }, { autoAlpha: 1, x: 0, duration: 0.3 }, t0);
+      [[190, '1', '폴더 열기'], [630, '2', '한 줄 쓰기']].forEach(([x, n, l], k) => {
+        const dsh = box(x - 10, 580, 270, 270, 'dash'); gsap.set(dsh, { autoAlpha: 0 });
+        tl.fromTo(dsh, { autoAlpha: 0, scale: 0.9 }, { autoAlpha: 1, scale: 1, duration: 0.3 }, t0 + 0.1 + k * 0.1);
+        const o = wrap(x, 590, 250, 250, 40);
+        const tile = box(0, 0, 250, 250, 'tile', o, `<div class="n">${n}</div><div class="d"><b class="${k === 0 ? 'on' : ''}"></b><b class="${k === 1 ? 'on' : ''}"></b></div>`);
+        const lb = box(x - 40, 880, 330, 50, 'lbl', stage, l); gsap.set(lb, { autoAlpha: 0 });
+        const tp = W(3, 3 + k);
+        pop(o, tp, k ? 4 : -4, 0.45);
+        tl.fromTo(lb, { autoAlpha: 0, y: 20 }, { autoAlpha: 1, y: 0, duration: 0.3 }, tp + 0.1);
+        tl.to(dsh, { autoAlpha: 0, duration: 0.2 }, tp);
+        tl.to(lb, { autoAlpha: 0, duration: 0.2 }, S(4) - 0.2);
+        tiles.push({ o, x, rot: k ? 4 : -4 });
+      });
+      const u = draw(wobble(170, 952, 920, 948, 11, 8), W(3, 5), 0.35, 12);
+      tl.to([note, u], { autoAlpha: 0, duration: 0.2 }, S(4) - 0.2);
+      // 타일 1 → 오른쪽 위 STEP 배지 자리로
+      const BX = 862, BY = 452, SC = 0.46;
+      tl.to(tiles[0].o, { x: BX - tiles[0].x, y: BY - 590, scale: SC, rotation: 3, transformOrigin: '0 0', duration: 0.5, ease: 'power3.inOut' }, S(4) - 0.2);
+      tl.to(tiles[1].o, { autoAlpha: 0, scale: 0.6, duration: 0.25, ease: 'power2.in' }, S(4) - 0.2);
+      tl.set(tiles[1].o, { x: BX - tiles[1].x, y: BY - 590, scale: SC, transformOrigin: '0 0', rotation: 3 }, S(4) + 0.2);
+      // 두 번째 단계에서 배지 교체
+      tl.to(tiles[0].o, { rotationY: 90, duration: 0.18, ease: 'power2.in' }, S(6) - 0.15);
+      tl.set(tiles[0].o, { autoAlpha: 0 }, S(6) + 0.03);
+      tl.fromTo(tiles[1].o, { autoAlpha: 1, rotationY: -90 }, { rotationY: 0, duration: 0.22, ease: 'power2.out', immediateRender: false }, S(6) + 0.03);
+      tl.to(tiles[1].o, { autoAlpha: 0, y: '-=60', duration: 0.3 }, S(8) - 0.15);
+      tiles.forEach((tt) => { tt.o.style.zIndex = 6; });
+    }
+
+    // ═════════ 장면 5–8: 폴더 → 클로드 코드 창 → 점검 → 한 줄 입력
+    {
+      // 폴더
+      const fo = box(380, 620, 320, 290, '', stage, '<svg viewBox="0 0 320 250" width="320" height="250"><path d="M14 40q0-18 18-18h82l22 24h152q18 0 18 18v150q0 18-18 18H32q-18 0-18-18z" fill="#5E9BEF"/><path d="M14 84q0-16 16-16h260q16 0 16 16v130q0 18-18 18H32q-18 0-18-18z" fill="#86B6F7"/><path d="M14 84q0-16 16-16h260q16 0 16 16v8H14z" fill="#9CC4FA"/></svg><div class="mono" style="margin:14px auto 0;width:max-content;background:#3D7FE0;color:#fff;font-size:25px;padding:5px 18px;border-radius:10px">reel-skills</div>');
+      gsap.set(fo, { autoAlpha: 0 });
+      pop(fo, S(4) + 0.05, -3, 0.45);
+      const cur = box(0, 0, 60, 70, '', front, '<svg width="60" height="70" viewBox="0 0 60 70"><path d="M6 4v52l14-13 10 23 10-4-10-22h20z" fill="#fff" stroke="#161514" stroke-width="4" stroke-linejoin="round"/></svg>');
+      gsap.set(cur, { autoAlpha: 0, x: 870, y: 1060 });
+      tl.to(cur, { autoAlpha: 1, duration: 0.15 }, W(4, 2));
+      tl.to(cur, { x: 560, y: 760, duration: Math.max(0.4, W(4, 8) - W(4, 2) - 0.2), ease: 'power2.inOut' }, W(4, 2));
+      const tc = W(4, 8) - 0.04;
+      tl.to(cur, { scale: 0.82, duration: 0.06, repeat: 3, yoyo: true, ease: 'none' }, tc);
+      tl.to(fo, { scale: 0.92, duration: 0.06, repeat: 3, yoyo: true, ease: 'none' }, tc);
+      tl.to(fo, { autoAlpha: 0, scale: 1.3, duration: 0.25 }, tc + 0.3);
+      tl.to(cur, { autoAlpha: 0, duration: 0.2 }, tc + 0.4);
+
+      // 클로드 코드 창
+      const wo = wrap(100, 560, 880, 540, 28); wo._rot = 0;
+      const win = box(0, 0, 880, 540, 'win', wo);
+      el('div', 'winbar', '<i></i><i></i><i></i><span style="margin-left:12px">reel-skills — claude code</span>', win);
+      tl.fromTo(wo, { autoAlpha: 0, scale: 0.15, transformOrigin: '52% 40%' }, { autoAlpha: 1, scale: 1, duration: 0.42, ease: 'back.out(1.3)' }, tc + 0.28);
+
+      // body A: 시작 화면
+      const bA = box(0, 58, 880, 482, '', win,
+        '<div style="position:absolute;left:0;right:0;top:110px;text-align:center"><div style="font-size:64px;color:#E2261C;font-weight:800;line-height:1">›_</div><div style="font-size:32px;color:#9a9a9a;margin-top:22px;font-weight:600">reel-skills 폴더를 열었어요</div></div>' +
+        '<div class="mono" style="position:absolute;left:34px;right:34px;bottom:34px;height:76px;border:2px solid #333;border-radius:16px;font-size:24px;color:#666;display:flex;align-items:center;padding:0 22px">› 무엇이든 시켜보세요</div>');
+      tl.set(bA, { autoAlpha: 1 }, 0); tl.to(bA, { autoAlpha: 0, duration: 0.15 }, S(5) - 0.05);
+
+      // body B: 환경 점검
+      const bB = box(0, 58, 880, 482, '', win); gsap.set(bB, { autoAlpha: 0 });
+      const head = box(40, 34, 800, 50, 'mono', bB, '<div style="font-size:25px;color:#9a9a9a">환경 점검 중… <span class="cnt" style="color:#fff">0/4</span></div>');
+      const cnt = head.querySelector('.cnt');
+      const items = [['Node.js', 'v22.11'], ['FFmpeg', '7.1'], ['HyperFrames', '0.8'], ['받아쓰기 엔진', 'ready']];
+      const doneT = [W(5, 6), W(5, 7), W(5, 8), W(5, 8) + 0.42];
+      items.forEach(([n, v], k) => {
+        const r = box(0, 0, 0, 0, 'crow', bB, `<div class="st"><div class="spin"></div><div class="chk">${CHECK_D}</div></div><span>${n}</span><span class="v">${v}</span>`);
+        r.style.top = 110 + k * 78 + 'px'; r.style.width = ''; r.style.height = '64px';
+        const sp = r.querySelector('.spin'), ck = r.querySelector('.chk');
+        gsap.set(ck, { autoAlpha: 0 }); gsap.set(r, { autoAlpha: 0 });
+        tl.fromTo(r, { autoAlpha: 0, x: -20 }, { autoAlpha: 1, x: 0, duration: 0.2 }, S(5) + 0.05 + k * 0.12);
+        spinner(sp, S(5), doneT[k]);
+        tl.set(sp, { autoAlpha: 0 }, doneT[k]);
+        tl.fromTo(ck, { autoAlpha: 0, scale: 0.4 }, { autoAlpha: 1, scale: 1, duration: 0.25, ease: 'back.out(3)' }, doneT[k]);
+        tl.call(() => {}, null, doneT[k]);
+        tl.set(cnt, { textContent: `${k + 1}/4` }, doneT[k]);
+      });
+      tl.set(bB, { autoAlpha: 1 }, S(5) - 0.05);
+      const st = box(330, 905, 540, 124, 'pill', front, '<div style="display:flex;align-items:center;gap:22px;font-size:58px"><i style="width:44px;height:44px;border-radius:50%;background:#fff;display:inline-block"></i>준비 완료</div>');
+      gsap.set(st, { autoAlpha: 0 });
+      const ts = W(5, 8) + 0.85;
+      tl.fromTo(st, { autoAlpha: 0, scale: 1.9, rotation: -4 }, { autoAlpha: 1, scale: 1, rotation: -7, duration: 0.2, ease: 'power4.in' }, ts - 0.2);
+      tl.fromTo(wo, { y: 0 }, { y: 9, duration: 0.05, repeat: 3, yoyo: true, ease: 'none', immediateRender: false }, ts);
+      tl.to(st, { autoAlpha: 0, x: 300, rotation: 4, duration: 0.3, ease: 'power2.in' }, S(6) - 0.2);
+      tl.to(bB, { autoAlpha: 0, duration: 0.15 }, S(6) - 0.05);
+
+      // body C: 한 줄 입력
+      const bC = box(0, 58, 880, 482, '', win); gsap.set(bC, { autoAlpha: 0 });
+      const ask = box(0, 120, 880, 60, '', bC, '<div style="text-align:center;font-size:44px;font-weight:700;color:#d6d6d6">무엇을 만들까요?</div>');
+      const inp = box(34, 300, 812, 110, '', bC); inp.style.cssText += 'border:2px solid #3a3a3a;border-radius:18px;background:#202020';
+      const txt = box(26, 0, 760, 110, '', inp); txt.style.cssText += 'display:flex;align-items:center;font-size:33px;font-weight:600;color:#fff;line-height:1.35;flex-wrap:wrap';
+      const caret = el('span', '', null, txt); caret.style.cssText = 'display:inline-block;width:4px;height:40px;background:#fff;margin-left:4px';
+      tl.set(bC, { autoAlpha: 1 }, S(6) - 0.05);
+      tl.fromTo(caret, { autoAlpha: 1 }, { autoAlpha: 0, duration: 0.01, repeat: Math.ceil((S(7) - S(6)) / 0.45), yoyo: true, repeatDelay: 0.42, ease: 'none' }, S(6));
+      const ul = draw(wobble(150, 990, 930, 984, 21, 6), W(6, 6), 0.3, 11);
+      const p1 = box(690, 838, 220, 92, 'pill', front, '<span style="font-size:44px">딱 1줄</span>'); gsap.set(p1, { autoAlpha: 0 });
+      pop(p1, W(6, 6), 6);
+      tl.to([p1, ul], { autoAlpha: 0, duration: 0.2 }, S(7) - 0.1);
+      // 타이핑 (단어를 말하는 동안 그 글자가 찍힘)
+      tl.to(ask, { autoAlpha: 0, y: -20, duration: 0.2 }, S(7) - 0.1);
+      tl.set([inp, txt], { height: 250 }, S(7) - 0.1);
+      tl.fromTo(inp, { y: 0 }, { y: -150, duration: 0.25, ease: 'power2.out', immediateRender: false }, S(7) - 0.1);
+      SS[7].words.forEach((w, k) => {
+        const chars = [...w.raw.replace(/[*“”]/g, '')];
+        chars.forEach((ch, j) => {
+          const s = el('span', '', ch === ' ' ? '&nbsp;' : ch, txt); txt.insertBefore(s, caret);
+          gsap.set(s, { display: 'none' });
+          tl.set(s, { display: 'inline' }, w.s + ((w.e - w.s) * j) / chars.length);
+        });
+        if (k < SS[7].words.length - 1) { const sp = el('span', '', '&nbsp;', txt); txt.insertBefore(sp, caret); gsap.set(sp, { display: 'none' }); tl.set(sp, { display: 'inline' }, w.e); }
+      });
+      const cup = box(610, 405, 170, 170, '', front, HEART); gsap.set(cup, { autoAlpha: 0 });
+      pop(cup, W(7, 0), 8, 0.45);
+      const coin = box(110, 470, 130, 130, '', front, '<div style="width:130px;height:130px;border-radius:50%;background:#161514;color:#fff;font-size:70px;font-weight:800;display:flex;align-items:center;justify-content:center;border:6px solid #EDEAE4;box-shadow:0 0 0 3px #161514">₩</div>');
+      gsap.set(coin, { autoAlpha: 0 });
+      pop(coin, W(7, 1), -10, 0.45);
+      const key = box(640, 1010, 250, 116, '', front, '<div class="k" style="width:250px;height:116px;border-radius:24px;background:#E2261C;color:#fff;font-size:44px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:14px;box-shadow:0 10px 0 #9e1912">Enter <span style="font-size:48px">↵</span></div>');
+      gsap.set(key, { autoAlpha: 0 });
+      pop(key, WE(7, -1) - 0.35, -3, 0.35);
+      const kk = key.querySelector('.k');
+      const tk = WE(7, -1) + 0.12;
+      tl.to(kk, { y: 9, boxShadow: '0 1px 0 #9e1912', duration: 0.07, ease: 'power2.in' }, tk - 0.07).to(kk, { y: 0, boxShadow: '0 10px 0 #9e1912', duration: 0.18 }, tk + 0.05);
+      const ring = svgEl('circle', { cx: 765, cy: 1068, r: 60, fill: 'none', stroke: RED, 'stroke-width': 6 });
+      gsap.set(ring, { autoAlpha: 0 });
+      tl.fromTo(ring, { autoAlpha: 1, attr: { r: 70 } }, { autoAlpha: 0, attr: { r: 210 }, duration: 0.45, ease: 'power2.out', immediateRender: false }, tk);
+      const tOut = S(8) - 0.12;
+      tl.to(wo, { autoAlpha: 0, scale: 0.85, y: 60, duration: 0.3, ease: 'power2.in' }, tOut);
+      tl.to([cup, coin, key], { autoAlpha: 0, y: -80, duration: 0.25, stagger: 0.04 }, tOut);
+    }
+
+    // ═════════ 장면 9: "대본부터 장면, 자막, 효과음까지"
+    let s9;
+    {
+      const t0 = S(8) - 0.05;
+      const po = wrap(100, 470, 360, 690, 56); po._rot = -2.5;
+      const ph = box(0, 0, 360, 690, 'phone', po); const sc = el('div', 'screen', null, ph); el('div', 'notch', null, sc);
+      const slots = [['// 대본', 64, 120], ['// 장면', 200, 220], ['// 자막', 436, 74], ['// 효과음', 526, 74]].map(([l, y, h]) => {
+        const d = box(22, y, 310, h, '', sc); d.style.cssText += 'border:3px dashed #C9C3B8;border-radius:14px';
+        box(14, 8, 200, 24, 'mono', d, `<div style="font-size:15px;color:#a7a196">${l}</div>`);
+        return d;
+      });
+      const fills = [
+        '<div style="position:absolute;left:16px;top:38px;right:16px"><div style="height:12px;background:#161514;border-radius:6px;width:90%"></div><div style="height:12px;background:#E2261C;border-radius:6px;width:60%;margin-top:12px"></div><div style="height:12px;background:#161514;border-radius:6px;width:76%;margin-top:12px"></div></div>',
+        '<div style="position:absolute;left:85px;top:34px;width:140px;height:130px">' + CHART + '</div>',
+        '<div style="position:absolute;left:30px;top:16px;right:30px;height:42px;background:#161514;border-radius:8px;color:#fff;font-size:18px;font-weight:700;display:flex;align-items:center;justify-content:center">팔로워보다 <span class="em" style="margin-left:6px;font-size:20px">DM</span>이 먼저</div>',
+        '<div style="position:absolute;left:26px;right:26px;top:16px;height:44px;display:flex;align-items:center;gap:5px">' + Array.from({ length: 26 }, (_, k) => `<i style="flex:1;height:${10 + Math.round(rnd(k + 40) * 34)}px;background:#E2261C;border-radius:3px;display:block"></i>`).join('') + '</div>',
+      ];
+      show(po, t0, { x: -420, y: 0, rotation: -10 }, 0.5, 'power3.out');
+      const pa = wrap(500, 520, 480, 590, 30); pa._rot = 1.5;
+      const pc = box(0, 0, 480, 590, 'card', pa);
+      box(28, 24, 420, 40, 'mono', pc, '<div style="font-size:22px;color:#8c867c">// 클로드가 만드는 중</div>');
+      const names = [['Aa', '대본'], ['▣', '장면'], ['T', '자막'], ['♪', '효과음']];
+      const done = [W(8, 2), W(8, 3), W(8, 4), W(8, 5)].map((t) => t + 0.2);
+      names.forEach(([ic, n], k) => {
+        const r = box(0, 0, 0, 0, 'row', pc, `<div class="ic">${ic}</div><span>${n}</span><div class="st"><div class="spin"></div><div class="chk">${CHECK}</div></div>`);
+        r.style.top = 80 + k * 100 + 'px'; r.style.width = ''; r.style.height = '84px';
+        const sp = r.querySelector('.spin'), ck = r.querySelector('.chk'), icn = r.querySelector('.ic');
+        gsap.set(ck, { autoAlpha: 0 });
+        const ta = k ? done[k - 1] : t0 + 0.3;
+        tl.to(r, { borderColor: RED, color: INK, duration: 0.15 }, ta);
+        tl.to(icn, { backgroundColor: RED, color: '#fff', duration: 0.15 }, ta);
+        spinner(sp, ta, done[k]);
+        tl.set(sp, { autoAlpha: 0 }, done[k]);
+        tl.fromTo(ck, { autoAlpha: 0, scale: 0.4 }, { autoAlpha: 1, scale: 1, duration: 0.25, ease: 'back.out(3)' }, done[k]);
+        tl.to(r, { borderColor: '#E1DCD3', duration: 0.2 }, done[k] + 0.05);
+        tl.to(icn, { backgroundColor: INK, duration: 0.2 }, done[k] + 0.05);
+        const f = box(0, 0, 310, 0, '', slots[k], fills[k]); f.style.cssText += 'inset:0;width:auto;height:auto';
+        gsap.set(f, { autoAlpha: 0 });
+        tl.to(slots[k], { borderColor: 'rgba(0,0,0,0)', duration: 0.1 }, done[k]);
+        tl.fromTo(f, { autoAlpha: 0, scale: 0.7 }, { autoAlpha: 1, scale: 1, duration: 0.3, ease: 'back.out(2)' }, done[k]);
+      });
+      const fileRow = box(28, 500, 424, 66, '', pc, '<div class="mono" style="display:flex;justify-content:space-between;font-size:21px;color:#555"><span>insta_money.mp4</span><span class="pct" style="color:#161514;font-weight:500">0%</span></div><div style="margin-top:14px;height:10px;background:#E8E3DB;border-radius:6px;overflow:hidden"><div class="pb" style="height:10px;width:100%;background:#E2261C;transform-origin:0 50%"></div></div>');
+      const pb = fileRow.querySelector('.pb'), pct = fileRow.querySelector('.pct');
+      const tEnd = W(8, 8) + 0.25;
+      tl.fromTo(pb, { scaleX: 0 }, { scaleX: 1, duration: tEnd - t0, ease: 'power1.inOut' }, t0);
+      counter(pct, 0, 100, t0, tEnd - t0, (v) => Math.round(v) + '%');
+      show(pa, t0 + 0.08, { x: 420, y: 0, rotation: 10 }, 0.5, 'power3.out');
+      s9 = [po, pa];
+    }
+
+    // ═════════ 전환 → 장면 10: "좋은 건 여기서 끝이 아닙니다"
+    const h1 = halftone(S(9) - 0.25);
+    tl.set(s9, { autoAlpha: 0 }, h1);
+    let s10;
+    {
+      const o = wrap(170, 560, 740, 400, 34); o._rot = -4;
+      box(0, 0, 740, 400, '', o, '<div style="position:absolute;inset:0;background:#161514;border-radius:34px"></div><div class="mono" style="position:absolute;left:40px;top:36px;font-size:24px;color:#8a8a8a">BONUS · 하나 더</div><div style="position:absolute;left:40px;top:96px;font-size:190px;font-weight:800;color:#fff;line-height:1">+1</div><div style="position:absolute;left:330px;top:150px;font-size:58px;font-weight:800;color:#fff;line-height:1.15">스스로<br><span style="color:#E2261C">다시 점검</span></div><div style="position:absolute;right:-40px;top:-40px;width:120px;height:120px;border-radius:50%;background:#EDEAE4"></div>');
+      pop(o, h1 + 0.2, -4, 0.45);
+      tl.to(o, { scale: 1.08, duration: 0.12, ease: 'power2.out' }, W(9, 3)).to(o, { scale: 1, duration: 0.25, ease: 'back.out(3)' }, W(9, 3) + 0.12);
+      tl.to(o, { autoAlpha: 0, scale: 0.8, y: -60, duration: 0.25, ease: 'power2.in' }, S(10) - 0.12);
+      s10 = o;
+    }
+
+    // ═════════ 장면 11: 자체 점검 5.1 → 9.2
+    {
+      const t0 = S(10) - 0.05;
+      const o = wrap(100, 480, 880, 640, 30); o._rot = -1;
+      const c = box(0, 0, 880, 640, 'card', o);
+      const th = box(34, 40, 200, 380, 'phone', c); th.style.borderRadius = '34px'; th.style.padding = '8px';
+      const ts = el('div', 'screen', '<div style="position:absolute;left:14px;top:40px;font-size:15px;font-weight:700;line-height:1.25">인스타그램<br><span class="em">수익화</span> 노하우</div><div style="position:absolute;left:35px;top:120px;width:120px;height:112px">' + CHART + '</div><div style="position:absolute;left:14px;right:14px;bottom:40px;height:22px;background:#161514;border-radius:5px"></div>', th);
+      ts.style.borderRadius = '28px';
+      box(280, 40, 400, 30, 'mono', c, '<div style="font-size:22px;color:#8c867c">// 자체 점검 · insta_money.mp4</div>');
+      const sc = box(280, 90, 560, 170, '', c, '<span class="v" style="font-size:150px;font-weight:800;color:#E2261C;letter-spacing:-4px;line-height:1">5.1</span><span style="font-size:52px;font-weight:700;color:#a19b90;margin-left:10px">/10</span>');
+      const sv = sc.querySelector('.v');
+      const track = box(280, 300, 540, 20, '', c); track.style.cssText += 'background:#E8E3DB;border-radius:10px;overflow:hidden';
+      const fill = box(0, 0, 540, 20, '', track); fill.style.cssText += 'background:#E2261C;transform-origin:0 50%';
+      gsap.set(fill, { scaleX: 0.51 });
+      const tag = box(280, 345, 400, 40, 'mono', c, '<div style="font-size:21px;color:#8c867c">장면 흐름 · 자막 타이밍</div>');
+      const chart = box(34, 440, 812, 160, '', c);
+      const weak = [5, 13, 20];
+      const bars = [];
+      for (let k = 0; k < 27; k++) {
+        const h = weak.includes(k) ? (k === 13 ? 150 : 24) : 60 + Math.round(rnd(k + 3) * 60);
+        const b = box(k * 30, 0, 20, 160, '', chart); b.style.cssText += `top:auto;bottom:0;height:${h}px;background:${weak.includes(k) ? RED : INK};border-radius:4px 4px 0 0`;
+        bars.push(b);
+      }
+      const mag = box(0, 0, 150, 170, '', c, '<svg width="150" height="170" viewBox="0 0 150 170"><circle cx="62" cy="62" r="46" fill="rgba(255,255,255,.35)" stroke="#161514" stroke-width="11"/><path d="M96 98l40 48" stroke="#161514" stroke-width="16" stroke-linecap="round"/></svg>');
+      gsap.set(mag, { x: 20, y: 420, autoAlpha: 0 });
+      show(o, t0, { y: 120, rotation: 3 }, 0.45, 'power3.out');
+      tl.to(mag, { autoAlpha: 1, duration: 0.15 }, W(10, 3));
+      tl.to(mag, { x: 700, duration: Math.max(0.6, W(10, 6) - W(10, 3)), ease: 'sine.inOut' }, W(10, 3));
+      tl.to(mag, { autoAlpha: 0, duration: 0.15 }, W(10, 6) + 0.1);
+      const circles = weak.map((k, j) => draw(handCircle(100 + 34 + k * 30 + 10, 480 + 440 + 80, 34, 92, j * 2), W(10, 6) + j * 0.14, 0.28, 8));
+      const tf = W(10, 8);
+      weak.forEach((k) => tl.to(bars[k], { height: 70 + Math.round(rnd(k) * 40), backgroundColor: INK, duration: 0.35, ease: 'back.out(2)' }, tf));
+      tl.to(circles, { autoAlpha: 0, duration: 0.2 }, tf);
+      counter(sv, 5.1, 9.2, tf, 0.5, (v) => v.toFixed(1));
+      tl.set(sv, { textContent: '5.1' }, 0);
+      tl.to(fill, { scaleX: 0.92, duration: 0.5, ease: 'power2.out' }, tf);
+      tl.to(sv, { color: INK, duration: 0.3 }, tf + 0.3);
+      const st = box(560, 360, 360, 96, 'pill', front, '<div style="display:flex;align-items:center;gap:16px;font-size:44px"><i style="width:34px;height:34px;border-radius:50%;background:#fff;display:inline-block"></i>수정 완료</div>');
+      gsap.set(st, { autoAlpha: 0 });
+      tl.fromTo(st, { autoAlpha: 0, scale: 1.8, rotation: 2 }, { autoAlpha: 1, scale: 1, rotation: -6, y: 410, duration: 0.2, ease: 'power4.in' }, tf + 0.35);
+      const tOut = S(11) - 0.12;
+      tl.to([o, st], { autoAlpha: 0, y: '-=60', duration: 0.28, ease: 'power2.in' }, tOut);
+    }
+
+    // ═════════ 장면 12: 편집 프로그램 ✕  /  한 줄 ✓
+    let s12;
+    {
+      const L = wrap(80, 560, 440, 470, 30); L._rot = -3;
+      const lc = box(0, 0, 440, 470, 'card', L);
+      box(30, 30, 380, 50, '', lc, '<div style="font-size:38px;font-weight:800;color:#8c867c">편집 프로그램</div>');
+      for (let k = 0; k < 5; k++) for (let j = 0; j < 3; j++) { const b = box(30 + j * 128 + (k % 2) * 30, 120 + k * 64, 100 - (j === 2 ? 30 : 0), 44, '', lc); b.style.cssText += 'background:#D9D3C8;border-radius:8px'; }
+      show(L, W(11, 2) - 0.1, { x: -300, y: 0, rotation: -12 }, 0.45, 'power3.out');
+      const x1 = draw('M110 600 C 230 720, 380 880, 500 1010', W(11, 4), 0.2, 16);
+      const x2 = draw('M500 600 C 380 720, 230 880, 110 1010', W(11, 4) + 0.15, 0.2, 16);
+      tl.to(L, { autoAlpha: 0.55, duration: 0.3 }, W(11, 4) + 0.35);
+      const Rr = wrap(560, 520, 450, 520, 30); Rr._rot = 3;
+      const rc = box(0, 0, 450, 520, 'win', Rr); rc.style.border = '6px solid #E2261C';
+      el('div', 'winbar', '<i></i><i></i><i></i>', rc);
+      box(30, 120, 390, 60, '', rc, '<div class="em" style="font-size:66px">한 줄</div>');
+      box(30, 250, 384, 150, '', rc, '<div style="border:2px solid #3a3a3a;border-radius:16px;background:#202020;padding:20px 22px;font-size:30px;font-weight:600;line-height:1.35;color:#fff;word-break:keep-all">인스타그램 수익화 노하우, 릴스로 만들어줘 <span style="color:#E2261C">↵</span></div>');
+      pop(Rr, W(11, 5) - 0.05, 3, 0.45);
+      tl.to(Rr, { scale: 1.06, duration: 0.25, ease: 'power2.out' }, W(11, 7)).to(Rr, { scale: 1, duration: 0.3 }, W(11, 7) + 0.25);
+      s12 = [L, Rr, x1, x2];
+    }
+
+    // ═════════ 전환 → 장면 13: 댓글 "스킬"
+    const h2 = halftone(S(12) - 0.25);
+    tl.set(s12, { autoAlpha: 0 }, h2);
+    {
+      const p = box(290, 470, 500, 150, 'pill', front, '<div style="display:flex;align-items:center;gap:22px"><svg width="70" height="64" viewBox="0 0 70 64"><path d="M35 4C17 4 4 15 4 29c0 8 4 15 11 20l-4 12 14-7c3 1 7 1 10 1 18 0 31-11 31-26S53 4 35 4z" fill="#fff"/></svg><span style="font-size:96px;letter-spacing:-2px">스킬</span></div>');
+      gsap.set(p, { autoAlpha: 0 });
+      pop(p, W(12, 1) - 0.04, -4, 0.45);
+      const o = wrap(130, 660, 820, 470, 30); o._rot = 1;
+      const sh = box(0, 0, 820, 470, '', o); sh.style.cssText += 'background:#161616;border-radius:30px;overflow:hidden';
+      box(0, 0, 820, 80, '', sh, '<div style="margin:14px auto 0;width:64px;height:7px;border-radius:4px;background:#444"></div><div style="text-align:center;color:#fff;font-size:28px;font-weight:700;margin-top:12px">댓글</div>');
+      const cmts = [['s***_studio', '스킬', '#5c5c5c', 2], ['c***.daily', '스킬 부탁드려요', '#7d736a', 4], ['m***_mk', '스킬!', '#4b5563', 6], ['j***_0', '스킬 받고 싶어요', '#6b5d57', 8]];
+      cmts.forEach(([h, t, col, wi], k) => {
+        const r = box(0, 0, 0, 0, 'cm', sh, `<div class="av" style="background:${col}"></div><div><div class="h">${h}</div><div class="t">${t.replace('스킬', '<span style="color:#ff5a4e;font-weight:800">스킬</span>')}</div></div>`);
+        r.style.top = 96 + k * 90 + 'px'; r.style.width = ''; r.style.height = '82px';
+        gsap.set(r, { autoAlpha: 0 });
+        tl.fromTo(r, { autoAlpha: 0, y: 30 }, { autoAlpha: 1, y: 0, duration: 0.28, ease: 'back.out(2)' }, W(12, wi) - 0.04);
+      });
+      show(o, S(12) + 0.15, { y: 200, rotation: 4 }, 0.5, 'power3.out');
+      const dm = wrap(440, 980, 560, 190, 26, front); dm._rot = 3;
+      const dc = box(0, 0, 560, 190, 'card', dm);
+      box(28, 34, 90, 90, '', dc, '<div style="width:90px;height:90px;border-radius:50%;background:#E2261C;display:flex;align-items:center;justify-content:center"><svg width="46" height="46" viewBox="0 0 46 46"><path d="M4 21L42 4 30 42l-8-15z" fill="#fff"/><path d="M22 27L42 4" stroke="#E2261C" stroke-width="3"/></svg></div>');
+      box(140, 34, 400, 120, '', dc, '<div style="font-size:34px;font-weight:800;line-height:1.2">릴스 스킬 + 설치 방법</div><div class="mono" style="font-size:22px;color:#E2261C;margin-top:12px">DM 전송됨 ✓</div>');
+      show(dm, W(12, 10) - 0.1, { x: 420, y: 0, rotation: 12 }, 0.45, 'back.out(1.6)');
+      tl.to(p, { scale: 1.07, duration: 0.3, repeat: 3, yoyo: true, ease: 'sine.inOut' }, WE(12, -1) + 0.1);
+    }
+
+    window.__timelines = window.__timelines || {};
+    window.__timelines['main'] = tl;
+  })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,485 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1080, height=1920" />
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script src="data.js"></script>
+  <style>
+    @font-face { font-family: 'Pretendard'; font-weight: 500; src: url(assets/fonts/Pretendard-Medium.woff2) format('woff2'); }
+    @font-face { font-family: 'Pretendard'; font-weight: 600; src: url(assets/fonts/Pretendard-SemiBold.woff2) format('woff2'); }
+    @font-face { font-family: 'Pretendard'; font-weight: 700; src: url(assets/fonts/Pretendard-Bold.woff2) format('woff2'); }
+    @font-face { font-family: 'Pretendard'; font-weight: 800; src: url(assets/fonts/Pretendard-ExtraBold.woff2) format('woff2'); }
+    @font-face { font-family: 'Myeongjo'; font-weight: 800; src: url(assets/fonts/NanumMyeongjo-ExtraBold.ttf) format('truetype'); }
+    @font-face { font-family: 'JBM'; font-weight: 500; src: url(assets/fonts/JetBrainsMono-Medium.ttf) format('truetype'); }
+    :root { --bg: #111216; --ink: #F4F5F7; --y: #FFD24A; --y2: #C9971A; --blue: #5B8CFF; --muted: #7E838F; --face: #1C1E25; --face2: #262933; --edge: #0B0C10; --line: #343844; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 1080px; height: 1920px; overflow: hidden; background: var(--bg); }
+    #root { position: relative; width: 1080px; height: 1920px; overflow: hidden; color: var(--ink); font-family: 'Pretendard', sans-serif; background: var(--bg); }
+    .abs { position: absolute; }
+    .mono { font-family: 'JBM', monospace; }
+    .p3 { transform-style: preserve-3d; }
+
+    /* 3D 무대: #scene(원근) > #rig(느린 기본 드리프트) > #world(장면별 카메라) > #floor + #stage3d */
+    #scene { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; z-index: 5; perspective: 1500px; perspective-origin: 540px 760px; }
+    #rig, #world, #stage3d { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; transform-style: preserve-3d; }
+    #floor { position: absolute; left: -1460px; top: 280px; width: 4000px; height: 3900px; transform-origin: 50% 900px; transform: rotateX(-90deg);
+      background-image: linear-gradient(rgba(255,255,255,.075) 2px, transparent 2px), linear-gradient(90deg, rgba(255,255,255,.075) 2px, transparent 2px);
+      background-size: 120px 120px; background-position: 20px 0;
+      -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 30%, transparent 78%); mask-image: linear-gradient(to bottom, #000 0%, #000 30%, transparent 78%); }
+    #vignette { position: absolute; inset: 0; z-index: 29; pointer-events: none; background: radial-gradient(ellipse at 50% 42%, transparent 58%, rgba(0,0,0,.42) 100%); }
+
+    #chapWrap { position: absolute; left: 84px; top: 88px; height: 34px; width: 600px; z-index: 12; font-size: 25px; color: var(--muted); letter-spacing: .5px; }
+    #stepWrap { position: absolute; right: 84px; top: 88px; height: 34px; width: 300px; z-index: 12; font-size: 25px; color: var(--muted); text-align: right; letter-spacing: 1px; }
+    #chapWrap span, #stepWrap span { position: absolute; left: 0; right: 0; top: 0; white-space: nowrap; }
+
+    #cap { position: absolute; left: 84px; top: 168px; width: 912px; z-index: 12; }
+    .grp { position: absolute; left: 0; top: 0; width: 912px; font-size: 76px; line-height: 1.2; font-weight: 800; letter-spacing: -2.4px; word-break: keep-all; }
+    .w { display: inline-block; margin-right: .24em; white-space: nowrap; }
+    .em { color: var(--y); display: inline-block; transform: skewX(-8deg); }
+
+    #front { position: absolute; inset: 0; z-index: 8; pointer-events: none; }
+    #marks { position: absolute; left: 0; top: 0; z-index: 9; pointer-events: none; overflow: visible; }
+    #trans { position: absolute; inset: 0; z-index: 25; pointer-events: none; perspective: 1200px; }
+    .slat { position: absolute; top: 0; height: 1920px; background: var(--y); backface-visibility: hidden; }
+
+    /* 3D 부품 */
+    .ex { position: absolute; transform-style: preserve-3d; text-align: center; white-space: nowrap; }
+    .ex span { position: absolute; left: 0; right: 0; top: 0; font-weight: 800; letter-spacing: -.04em; line-height: 1; }
+    .c3 { position: absolute; transform-style: preserve-3d; }
+    .c3 .slab { position: absolute; inset: 0; }
+    .c3 .face { position: absolute; inset: 0; overflow: hidden; }
+    .cube { position: absolute; transform-style: preserve-3d; }
+    .cube .cf { position: absolute; left: 0; top: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; backface-visibility: hidden; border: 3px solid rgba(255,255,255,.08); }
+    .shadow { position: absolute; border-radius: 50%; background: radial-gradient(ellipse at center, rgba(0,0,0,.55), rgba(0,0,0,0) 70%); }
+    .winbar { height: 58px; display: flex; align-items: center; gap: 12px; padding: 0 24px; border-bottom: 1px solid #2c2f39; font-family: 'JBM', monospace; font-size: 22px; color: #8d919c; }
+    .winbar i { width: 15px; height: 15px; border-radius: 50%; background: #3a3e4a; display: inline-block; }
+    .chip { position: absolute; display: inline-flex; align-items: center; gap: 12px; padding: 14px 26px; border-radius: 16px; background: #1C1E25; border: 2px solid #3a3e4a; font-weight: 800; font-size: 36px; white-space: nowrap; }
+    .key { width: 230px; height: 108px; border-radius: 22px; background: var(--y); color: #17181c; font-size: 42px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 12px; box-shadow: 0 10px 0 #9c7410; }
+
+    /* 캐릭터 (선택) */
+    #char { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; z-index: 7; pointer-events: none; }
+    #charIdle, #charPop, #charBob { position: absolute; left: 110px; top: 1098px; width: 860px; height: 1129px; transform-origin: 50% 100%; }
+    #charPop, #charBob { left: 0; top: 0; }
+    .pose { position: absolute; inset: 0; }
+    .pose .mouth { position: absolute; left: 0; top: 0; z-index: 2; overflow: visible; }
+    .pose img { position: absolute; left: 0; top: 0; width: 860px; height: 1129px; }
+    .pose .psh { position: absolute; left: 16px; top: 8px; width: 860px; height: 1129px; opacity: .35;
+      background-image: radial-gradient(circle, #000 1.8px, transparent 2.3px); background-size: 8px 8px;
+      -webkit-mask-size: 100% 100%; mask-size: 100% 100%; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; }
+
+    /* 내 영상(cam): 전체 화면 또는 아래 작은 창. 움직임은 #cam에(scale·y·borderRadius) */
+    #cam { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; z-index: 6; overflow: hidden; pointer-events: none; background: #111; }
+    #cam .camv { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; object-fit: cover; }
+    #camShade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.58) 0%, rgba(0,0,0,.12) 30%, rgba(0,0,0,0) 62%, rgba(0,0,0,.25) 100%); }
+    #root[data-cam="full"] #cap .w { color: #fff !important; text-shadow: 0 3px 0 rgba(0,0,0,.55), 0 0 22px rgba(0,0,0,.5); }
+    #root[data-cam="full"] #cap .em { color: #FFD24A; }
+    #root[data-cam="full"] #chapWrap, #root[data-cam="full"] #stepWrap { color: rgba(255,255,255,.8); }
+  </style>
+</head>
+<body>
+  <div id="root" data-composition-id="main" data-start="0" data-duration="{{DUR}}" data-width="1080" data-height="1920">
+    <div id="scene"><div id="rig"><div id="world"><div id="floor"></div><div id="stage3d"></div></div></div></div>
+    <div id="cam"><!--CAM--><div id="camShade"></div></div>
+    <div id="char"><div id="charIdle"><div id="charPop"><div id="charBob"></div></div></div></div>
+    <div id="front"></div>
+    <svg id="marks" width="1080" height="1920" viewBox="0 0 1080 1920"></svg>
+    <div id="chapWrap" class="mono"></div>
+    <div id="stepWrap" class="mono"></div>
+    <div id="cap"></div>
+    <div id="trans"></div>
+    <div id="vignette"></div>
+    <!--AUDIO-->
+  </div>
+  <script>
+  (function () {
+    const R = window.REEL, DUR = R.dur;
+    const tl = gsap.timeline({ paused: true });
+    const SS = R.sentences;
+    // 시각 헬퍼: 문장·단어 번호가 범위를 벗어나도 멈추지 않게 가장 가까운 것으로 맞춘다
+    const si = (i) => Math.max(0, Math.min(SS.length - 1, i));
+    const wd = (i, j) => { const ws = SS[si(i)].words; return ws[Math.max(0, Math.min(ws.length - 1, j < 0 ? ws.length + j : j))]; };
+    const S = (i) => (i >= SS.length ? DUR : SS[si(i)].start), E = (i) => SS[si(i)].end;
+    const W = (i, j) => wd(i, j).s;
+    const WE = (i, j) => wd(i, j).e;
+    const Y = '#FFD24A', BLUE = '#5B8CFF', INK = '#F4F5F7', FACE = '#1C1E25';
+    const stage = document.getElementById('stage3d'), front = document.getElementById('front');
+    const world = document.getElementById('world'), rig = document.getElementById('rig');
+    const marks = document.getElementById('marks');
+    const NS = 'http://www.w3.org/2000/svg';
+    const rnd = (k) => { const x = Math.sin(k * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
+
+    // ───────── 기본 헬퍼 (2D와 같음)
+    function el(tag, cls, html, parent) { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; (parent || stage).appendChild(e); return e; }
+    function box(x, y, w, h, cls, parent, html) { const e = el('div', 'abs ' + (cls || ''), html, parent); Object.assign(e.style, { left: x + 'px', top: y + 'px', width: w + 'px', height: h + 'px' }); return e; }
+    function show(o, t, from = {}, dur = 0.45, ease = 'back.out(1.5)') { tl.fromTo(o, { autoAlpha: 0, y: 70, ...from }, { autoAlpha: 1, y: 0, x: 0, rotation: o._rot || 0, scale: 1, duration: dur, ease }, t); }
+    function hide(o, t, to = {}, dur = 0.3) { tl.to(o, { autoAlpha: 0, y: -40, duration: dur, ease: 'power2.in', ...to }, t); }
+    function pop(o, t, rot = 0, dur = 0.4) { tl.fromTo(o, { autoAlpha: 0, scale: 0.3, rotation: rot - 12 }, { autoAlpha: 1, scale: 1, rotation: rot, duration: dur, ease: 'back.out(2.6)' }, t); }
+    function svgEl(tag, attrs, parent) { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); (parent || marks).appendChild(e); return e; }
+    function draw(d, t, dur = 0.3, width = 12, color = Y, parent) {
+      const p = svgEl('path', { d, fill: 'none', stroke: color, 'stroke-width': width, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, parent);
+      const L = p.getTotalLength(); gsap.set(p, { strokeDasharray: L, strokeDashoffset: L, autoAlpha: 0 });
+      tl.set(p, { autoAlpha: 1 }, t);
+      tl.to(p, { strokeDashoffset: 0, duration: dur, ease: 'power1.inOut' }, t);
+      return p;
+    }
+    function counter(span, from, to, t, dur, fmt) { const o = { v: from }; span.textContent = fmt(from); tl.to(o, { v: to, duration: dur, ease: 'power1.out', onUpdate: () => { span.textContent = fmt(o.v); } }, t); }
+    const CHECK = '<svg width="100%" height="100%" viewBox="0 0 22 22"><path d="M4 11.5l4.5 4.5L18 6" fill="none" stroke="#17181c" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+    // ───────── 3D 헬퍼
+    // 두께 있는 글자: 뒤로 layers장 겹쳐 진짜 입체(카메라가 돌면 옆면이 보임). 반환 = 움직일 컨테이너
+    function extrude(txt, x, y, size, o = {}) {
+      const { w = 1080 - 2 * x, color = Y, side = '#B4850F', back = '#5E4304', depth = 30, parent = stage, z = 0 } = o;
+      const g = box(x, y, w, size * 1.1, 'ex', parent);
+      const n = Math.max(4, Math.round(depth / 2.5));
+      for (let i = n; i >= 1; i--) {
+        const k = i / n, s = el('span', '', txt, g);
+        s.style.cssText += `font-size:${size}px;color:${gsap.utils.interpolate(side, back, k)};transform:translateZ(${(-depth * k).toFixed(1)}px)`;
+      }
+      const f = el('span', '', txt, g); f.style.cssText += `font-size:${size}px;color:${color};transform:translateZ(0.5px)`;
+      gsap.set(g, { z, autoAlpha: 0, transformOrigin: `50% 50% ${-depth / 2}px` });
+      return g;
+    }
+    // 두께 있는 카드/창: 뒤판(slab) 여러 장 + 앞면(face). 반환 { o: 움직일 컨테이너, face: 내용 넣는 곳 }
+    function card3d(x, y, w, h, o = {}) {
+      const { r = 30, depth = 18, bg = FACE, edge = '#0B0C10', border = '#343844', parent = stage, z = 0, cls = '' } = o;
+      const g = box(x, y, w, h, 'c3 ' + cls, parent);
+      const n = 4;
+      for (let i = n; i >= 1; i--) {
+        const s = el('div', 'slab', null, g);
+        s.style.cssText += `border-radius:${r}px;background:${edge};transform:translateZ(${(-depth * i / n).toFixed(1)}px)` + (i === n ? ';box-shadow:0 46px 70px rgba(0,0,0,.55)' : '');
+      }
+      const f = el('div', 'face', null, g); f.style.cssText += `border-radius:${r}px;background:${bg};border:2px solid ${border}`;
+      gsap.set(g, { z, autoAlpha: 0 });
+      return { o: g, face: f };
+    }
+    // 정육면체: faces[0..5] = 앞, 오른쪽, 뒤, 왼쪽, 위, 아래 (HTML). rotationY -90*k 하면 k번째 면(0~3)이 앞으로 옴
+    function cube(cx, cy, s, faces = [], o = {}) {
+      const { colors = [FACE, FACE, FACE, FACE, Y, '#0e0f13'], parent = stage, z = 0 } = o;
+      const g = box(cx - s / 2, cy - s / 2, s, s, 'cube', parent);
+      const T = [`translateZ(${s / 2}px)`, `rotateY(90deg) translateZ(${s / 2}px)`, `rotateY(180deg) translateZ(${s / 2}px)`,
+        `rotateY(-90deg) translateZ(${s / 2}px)`, `rotateX(90deg) translateZ(${s / 2}px)`, `rotateX(-90deg) translateZ(${s / 2}px)`];
+      g._faces = T.map((tr, k) => { const f = el('div', 'cf', faces[k] || '', g); f.style.cssText += `width:${s}px;height:${s}px;background:${colors[k] || FACE};transform:${tr};border-radius:${Math.round(s * 0.06)}px`; return f; });
+      gsap.set(g, { z, autoAlpha: 0 });
+      return g;
+    }
+    // 바닥 그림자 (물체 아래 타원). 물체와 같이 나타나고 사라지게 따로 트윈
+    function shadow(cx, y, w, parent = stage) { const s = box(cx - w / 2, y, w, w * 0.22, 'shadow', parent); gsap.set(s, { autoAlpha: 0 }); return s; }
+    // 깊이에서 날아오기 / 깊이로 사라지기
+    function show3d(o, t, from = {}, dur = 0.6, ease = 'power3.out') {
+      tl.fromTo(o, { autoAlpha: 0, z: -1100, rotationX: 28, rotationY: 0, ...from }, { autoAlpha: 1, z: o._z || 0, x: 0, y: 0, rotationX: o._rx || 0, rotationY: o._ry || 0, rotationZ: o._rz || 0, scale: 1, duration: dur, ease, immediateRender: false }, t);
+    }
+    function hide3d(o, t, to = {}, dur = 0.4) { tl.to(o, { autoAlpha: 0, z: -900, rotationX: -20, duration: dur, ease: 'power2.in', ...to }, t); }
+    // 카메라: 장면 전체(#world)를 돌리고 밀고 당긴다. to = { rotationX, rotationY, z, x, y }
+    function camMove(t, to, dur = 1.2, ease = 'power2.inOut') { tl.to(world, { ...to, duration: dur, ease }, t); }
+    // 노란 블라인드 전환: 반환 = 화면이 다 덮인 순간 (이때 이전 장면을 숨기고 다음 장면을 놓는다)
+    const transEl = document.getElementById('trans');
+    function wipe(t) {
+      const N = 9, Wd = 1080 / N;
+      for (let k = 0; k < N; k++) {
+        const s = box(k * Wd - 1, 0, Wd + 2, 1920, 'slat', transEl); gsap.set(s, { rotationY: 90, autoAlpha: 0 });
+        tl.fromTo(s, { autoAlpha: 1, rotationY: 90 }, { rotationY: 0, duration: 0.22, ease: 'power2.in', immediateRender: false }, t + k * 0.025);
+        tl.to(s, { rotationY: -90, duration: 0.24, ease: 'power2.out' }, t + 0.42 + k * 0.025);
+        tl.set(s, { autoAlpha: 0 }, t + 0.7 + k * 0.025);
+      }
+      return t + 0.42;
+    }
+
+    // ───────── 카메라 기본: 바닥이 살짝 떠오르고, 영상 내내 아주 천천히 흔들림
+    gsap.set(world, { transformOrigin: '540px 1000px' }); gsap.set(rig, { transformOrigin: '540px 1000px' });
+    tl.fromTo('#floor', { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.6 }, 0);
+    tl.fromTo(rig, { rotationY: -5, rotationX: 3 }, { rotationY: 5, rotationX: 1, duration: DUR, ease: 'sine.inOut' }, 0);
+
+    // ───────── 캐릭터 리그 (assets/char/<포즈>.png 있으면)
+    const HAS_CHAR = !!R.character;
+    const POSES = HAS_CHAR ? R.poses : [];
+    if (!HAS_CHAR) document.getElementById('char').style.display = 'none';
+    const bob = document.getElementById('charBob'), popEl = document.getElementById('charPop'), idle = document.getElementById('charIdle');
+    const poseEl = {};
+    POSES.forEach((n) => {
+      const p = el('div', 'pose', null, bob);
+      const sh = el('div', 'psh', null, p); sh.style.webkitMaskImage = sh.style.maskImage = `url(assets/char/${n}.png)`;
+      const im = el('img', '', null, p); im.src = `assets/char/${n}.png`;
+      gsap.set(p, { autoAlpha: 0 }); poseEl[n] = p;
+      const m = R.mouths && R.mouths[n];
+      if (m) {
+        const sv = svgEl('svg', { class: 'mouth', viewBox: '0 0 960 1260', width: 860, height: 1129 }, p);
+        const sk = `rgb(${m.skin.join(',')})`;
+        const defs = svgEl('defs', {}, sv);
+        const fl = svgEl('filter', { id: `mf_${n}`, x: '-20%', y: '-20%', width: '140%', height: '140%' }, defs); svgEl('feGaussianBlur', { stdDeviation: 1.6 }, fl);
+        const cp = svgEl('clipPath', { id: `mc_${n}` }, defs);
+        const g = svgEl('g', { transform: `translate(${m.cx} ${m.cy + 2}) rotate(${m.angle})` }, sv);
+        svgEl('rect', { x: -(m.wFull / 2 + 14), y: -(m.h / 2 + 12), width: m.wFull + 28, height: m.h + 28, rx: 22, fill: sk, filter: `url(#mf_${n})` }, g);
+        const cpath = svgEl('path', {}, cp);
+        const lip = svgEl('path', { fill: 'none', stroke: '#d48a7f', 'stroke-width': 5, 'stroke-linecap': 'round', opacity: 0.55 }, g);
+        const body = svgEl('path', { fill: '#6b2627', stroke: '#3d2522', 'stroke-width': 2.6, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }, g);
+        const inner = svgEl('g', { 'clip-path': `url(#mc_${n})` }, g);
+        const teeth = svgEl('rect', { fill: '#fbf7f2' }, inner);
+        const tongue = svgEl('ellipse', { fill: '#d4706e' }, inner);
+        poseEl[n]._mouth = { m, cpath, lip, body, teeth, tongue, Wb: m.wFull * 0.8, Hb: 34 };
+      }
+    });
+    const MO = R.mouth;
+    const drawMouth = (k, o, w, r) => {
+      const M = k._mouth; if (!M) return;
+      const Wm = M.Wb * w * (1 - 0.28 * r), H = M.Hb * o * (1 + 0.35 * r), c0 = -2.2 * (1 - Math.min(1, o * 2));
+      const up = -H * 0.62 - 0.6, dn = H * 1.18 + 1.2;
+      const d = `M${-Wm / 2} ${c0}C${-Wm / 4} ${up} ${Wm / 4} ${up} ${Wm / 2} ${c0}C${Wm / 4} ${dn} ${-Wm / 4} ${dn} ${-Wm / 2} ${c0}Z`;
+      M.body.setAttribute('d', d); M.cpath.setAttribute('d', d);
+      const ly = dn * 0.82 + 7;
+      M.lip.setAttribute('d', `M${-Wm * 0.3} ${ly}Q0 ${ly + 6} ${Wm * 0.3} ${ly}`);
+      M.teeth.setAttribute('x', -Wm / 2); M.teeth.setAttribute('width', Wm); M.teeth.setAttribute('y', up * 0.6 - 2); M.teeth.setAttribute('height', H > 7 ? Math.min(H * 0.3, 7) + 2 : 0);
+      M.tongue.setAttribute('cx', 0); M.tongue.setAttribute('cy', dn * 0.72); M.tongue.setAttribute('rx', Wm * 0.27); M.tongue.setAttribute('ry', Math.max(0, H * 0.32));
+    };
+    const lipFrame = (i) => { i = Math.max(0, Math.min(MO.o.length - 1, i)); POSES.forEach((n) => drawMouth(poseEl[n], MO.o[i], MO.w[i], MO.r[i])); };
+    if (MO && HAS_CHAR) {
+      lipFrame(0);
+      const lp = { f: 0 };
+      tl.to(lp, { f: MO.o.length - 1, duration: (MO.o.length - 1) / (R.fps || 30), ease: 'none', onUpdate: () => lipFrame(Math.round(lp.f)) }, 0);
+    }
+    if (HAS_CHAR) tl.fromTo('#char', { y: 620 }, { y: 0, duration: 0.65, ease: 'back.out(1.15)' }, 0.02);
+    tl.fromTo(idle, { y: 0 }, { y: -9, duration: 1.7, ease: 'sine.inOut', repeat: Math.ceil(DUR / 1.7), yoyo: true }, 0);
+    let curPose = null, side = 1;
+    const poseAt = (name, t) => {
+      if (!HAS_CHAR || curPose === name) return;
+      if (!poseEl[name]) name = poseEl.neutral ? 'neutral' : POSES[0];
+      if (!name || curPose === name) return;
+      if (curPose) tl.set(poseEl[curPose], { autoAlpha: 0 }, t);
+      tl.set(poseEl[name], { autoAlpha: 1 }, t);
+      if (curPose) tl.fromTo(popEl, { y: 16, scaleY: 0.975, rotation: side * 1.4 }, { y: 0, scaleY: 1, rotation: 0, duration: 0.38, ease: 'back.out(3)', immediateRender: false }, t);
+      side *= -1; curPose = name;
+    };
+    poseAt('neutral', 0);
+    SS.forEach((s, i) => (s.poses || []).forEach(([n, wi]) => poseAt(n, Math.max(0.05, (wi === 0 ? s.start - 0.12 : W(i, wi) - 0.08)))));
+    if (HAS_CHAR) SS.forEach((s) => s.words.forEach((w, k) => {
+      const a = 5 + (k % 3) * 2;
+      tl.to(bob, { y: -a, duration: 0.08, ease: 'power1.out' }, w.s).to(bob, { y: 0, duration: 0.17, ease: 'power1.in' }, w.s + 0.08);
+    }));
+
+    // ───────── 상단 라벨
+    const chapWrap = document.getElementById('chapWrap'), stepWrap = document.getElementById('stepWrap');
+    let lastChap = null, lastStep = null, chapSpan = null, stepSpan = null;
+    SS.forEach((s) => {
+      const t = Math.max(0.05, s.start - 0.15);
+      if (s.chap !== lastChap) {
+        const sp = el('span', '', '// ' + s.chap, chapWrap); gsap.set(sp, { autoAlpha: 0 });
+        if (chapSpan) tl.to(chapSpan, { autoAlpha: 0, x: -10, duration: 0.15 }, t);
+        tl.fromTo(sp, { autoAlpha: 0, x: 14 }, { autoAlpha: 1, x: 0, duration: 0.25 }, t + 0.1);
+        chapSpan = sp; lastChap = s.chap;
+      }
+      if (s.step !== lastStep) {
+        if (stepSpan) tl.to(stepSpan, { autoAlpha: 0, duration: 0.15 }, t);
+        if (s.step) { const sp = el('span', '', s.step, stepWrap); gsap.set(sp, { autoAlpha: 0 }); tl.fromTo(sp, { autoAlpha: 0, y: -8 }, { autoAlpha: 1, y: 0, duration: 0.25 }, t + 0.1); stepSpan = sp; } else stepSpan = null;
+        lastStep = s.step;
+      }
+    });
+
+    // ───────── 자막 (단어가 말하는 순간 올라옴)
+    const cap = document.getElementById('cap');
+    const fmtWord = (raw) => raw.replace(/\*([^*]+)\*/g, '<span class="em">$1</span>').replace(/\*/g, '');
+    SS.forEach((s, i) => {
+      const groups = [];
+      for (let g = 0; g < s.groups; g++) { const d = el('div', 'grp', null, cap); gsap.set(d, { autoAlpha: 0 }); groups.push(d); }
+      let prevChunk = -1, prevG = -1;
+      s.words.forEach((w) => {
+        if (w.g !== prevG) prevChunk = -1;
+        if (prevChunk !== -1 && w.chunk !== prevChunk) el('br', '', null, groups[w.g]);
+        const sp = el('span', 'w', fmtWord(w.raw), groups[w.g]);
+        tl.fromTo(sp, { autoAlpha: 0, y: 22, rotationX: -50, color: '#6E727D' }, { autoAlpha: 1, y: 0, rotationX: 0, duration: 0.22, ease: 'power3.out' }, w.s - 0.03);
+        tl.to(sp, { color: INK, duration: 0.18 }, w.s + 0.1);
+        prevChunk = w.chunk; prevG = w.g;
+      });
+      groups.forEach((d, g) => {
+        const first = s.words.find((w) => w.g === g);
+        tl.set(d, { autoAlpha: 1 }, first.s - 0.05);
+        const nextFirst = s.words.find((w) => w.g === g + 1);
+        const off = nextFirst ? nextFirst.s - 0.05 : (SS[i + 1] ? SS[i + 1].start - 0.05 : DUR + 1);
+        if (off < DUR) tl.to(d, { autoAlpha: 0, y: -16, duration: 0.12 }, off - 0.1);
+      });
+    });
+
+    // ───────── 내 영상 (timing.json "cam": true + 문장별 "cam": "full" | "pip")
+    {
+      const camBox = document.getElementById('cam'), rootEl = document.getElementById('root');
+      if (!R.cam) camBox.style.display = 'none';
+      else {
+        gsap.set(camBox, { autoAlpha: 0, transformOrigin: '50% 100%' });
+        const ST = { full: { scale: 1, y: 0, borderRadius: 0 }, pip: { scale: 0.42, y: -120, borderRadius: 90 } };
+        let prev = null;
+        SS.forEach((s, i) => {
+          const m = ST[s.cam] ? s.cam : null; if (m === prev) return;
+          const t = i === 0 ? 0 : Math.max(0, s.start - 0.15);
+          if (!m) tl.to(camBox, { autoAlpha: 0, duration: 0.2 }, t);
+          else if (!prev) tl.fromTo(camBox, { autoAlpha: 0, ...ST[m], scale: ST[m].scale * 1.06 }, { autoAlpha: 1, ...ST[m], duration: i === 0 ? 0.01 : 0.3, ease: 'power2.out', immediateRender: false }, t);
+          else tl.to(camBox, { ...ST[m], duration: 0.38, ease: 'power3.inOut' }, t);
+          tl.set(rootEl, { attr: { 'data-cam': m || '' } }, t);
+          if (HAS_CHAR) tl.to('#char', { autoAlpha: m ? 0 : 1, duration: 0.2 }, t);
+          prev = m;
+        });
+      }
+    }
+
+    // ═════════ 장면 1: "만약 3D로 만들고 싶다면" — 바닥에서 솟는 입체 3D
+    let big3d;
+    {
+      camMove(0, { z: 0, rotationX: 0 }, 0.01);
+      tl.fromTo(world, { z: -500 }, { z: 0, duration: Math.max(0.8, W(0, 1) - 0.1), ease: 'power2.out', immediateRender: false }, 0);
+      big3d = extrude('3D', 0, 700, 460, { w: 1080, depth: 52 });
+      const sh = shadow(540, 1250, 680);
+      const t3 = W(0, 1) - 0.15;
+      tl.fromTo(big3d, { autoAlpha: 0, y: 520, rotationX: 75 }, { autoAlpha: 1, y: 0, rotationX: 0, duration: 0.7, ease: 'back.out(1.4)', immediateRender: false }, t3);
+      tl.fromTo(sh, { autoAlpha: 0, scale: 0.4 }, { autoAlpha: 1, scale: 1, duration: 0.6 }, t3 + 0.1);
+      tl.fromTo(big3d, { rotationY: -24 }, { rotationY: 22, duration: Math.max(1, S(1) - t3), ease: 'sine.inOut', immediateRender: false }, t3 + 0.2);
+      // "한마디만 더" 말풍선
+      const bub = box(600, 1360, 380, 110, '', front, '<div style="background:#fff;color:#17181c;border-radius:28px 28px 28px 8px;height:110px;display:flex;align-items:center;justify-content:center;font-size:44px;font-weight:800">한마디만 더!</div>');
+      gsap.set(bub, { autoAlpha: 0 });
+      pop(bub, W(0, 4) - 0.05, -4);
+      tl.to(bub, { autoAlpha: 0, y: -40, duration: 0.25 }, S(1) - 0.2);
+      // 다음 장면이 오기 전에 깊이 속으로 멀어지며 사라짐
+      tl.to(big3d, { z: -1600, y: -260, rotationY: 40, autoAlpha: 0, duration: 0.6, ease: 'power3.in' }, S(1) - 0.3);
+      tl.to(sh, { autoAlpha: 0, duration: 0.3 }, S(1) - 0.3);
+    }
+
+    // ═════════ 장면 2: "“3D로 만들어줘” 이렇게요" — 깊이에서 날아오는 입력 창 + Enter
+    {
+      const t0 = S(1) - 0.12;
+      const { o, face } = card3d(110, 740, 860, 480, { r: 28 });
+      o._ry = -8; o._rx = 6;
+      el('div', 'winbar', '<i></i><i></i><i></i><span style="margin-left:12px">claude code</span>', face);
+      box(40, 96, 780, 60, '', face, '<div style="font-size:36px;font-weight:700;color:#9ca1ad">무엇을 만들까요?</div>');
+      const inp = box(34, 216, 792, 150, '', face); inp.style.cssText += 'border:2px solid #444957;border-radius:20px;background:#15161b';
+      const txt = box(30, 0, 740, 150, '', inp); txt.style.cssText += 'display:flex;align-items:center;font-size:52px;font-weight:800;color:#fff';
+      const caret = el('span', '', null, txt); caret.style.cssText = 'display:inline-block;width:5px;height:56px;background:' + Y + ';margin-left:6px';
+      show3d(o, t0, { rotationY: -40, rotationX: 30 }, 0.65);
+      tl.fromTo(caret, { autoAlpha: 1 }, { autoAlpha: 0, duration: 0.01, repeat: Math.ceil((E(1) - t0) / 0.45), yoyo: true, repeatDelay: 0.42, ease: 'none' }, t0);
+      [0, 1].forEach((wi) => {
+        const w = SS[1].words[wi]; const chars = [...w.raw.replace(/[*“”"]/g, '')];
+        chars.forEach((ch, j) => { const s = el('span', '', ch, txt); txt.insertBefore(s, caret); gsap.set(s, { display: 'none' }); tl.set(s, { display: 'inline' }, w.s + ((w.e - w.s) * j) / chars.length); });
+        if (wi === 0) { const sp = el('span', '', '&nbsp;', txt); txt.insertBefore(sp, caret); gsap.set(sp, { display: 'none' }); tl.set(sp, { display: 'inline' }, w.e); }
+      });
+      const key = box(700, 1290, 230, 118, '', front, '<div class="key k">Enter <span style="font-size:46px">↵</span></div>');
+      gsap.set(key, { autoAlpha: 0 });
+      pop(key, WE(1, 1) - 0.1, -4, 0.35);
+      const kk = key.querySelector('.k'), tk = WE(1, -1) + 0.1;
+      tl.to(kk, { y: 9, boxShadow: '0 1px 0 #9c7410', duration: 0.07, ease: 'power2.in' }, tk - 0.07).to(kk, { y: 0, boxShadow: '0 10px 0 #9c7410', duration: 0.18 }, tk + 0.05);
+      tl.to(o, { rotationY: -80, x: -760, autoAlpha: 0, duration: 0.45, ease: 'power2.in' }, S(2) - 0.15);
+      tl.to(key, { autoAlpha: 0, x: 300, duration: 0.3 }, S(2) - 0.15);
+    }
+
+    // ═════════ 장면 3–4: "글자도, 카드도, 화면도 전부 입체로" + "카메라가 천천히 돌면서 깊이가"
+    {
+      const items = [
+        { x: 70, ry: 30, z: -140, w: 1, html: '<div style="font-size:150px;font-weight:800;color:' + Y + ';line-height:1">Aa</div><div style="font-size:38px;font-weight:800;margin-top:26px">글자</div>' },
+        { x: 400, ry: 0, z: 0, w: 2, html: '<div style="width:170px;height:118px;border-radius:18px;background:#fff;box-shadow:16px 16px 0 ' + BLUE + '"></div><div style="font-size:38px;font-weight:800;margin-top:44px">카드</div>' },
+        { x: 730, ry: -30, z: -140, w: 3, html: '<div style="width:112px;height:190px;border-radius:24px;border:8px solid #fff;position:relative"><div style="position:absolute;left:14px;right:14px;top:22px;height:52px;border-radius:8px;background:' + Y + '"></div></div><div style="font-size:38px;font-weight:800;margin-top:24px">화면</div>' },
+      ];
+      const cards = items.map((it) => {
+        const { o, face } = card3d(it.x, 740, 280, 470, { r: 30, depth: 22 });
+        face.style.cssText += 'display:flex;flex-direction:column;align-items:center;justify-content:center';
+        face.innerHTML = it.html;
+        o._ry = it.ry; o._z = it.z;
+        show3d(o, W(2, it.w) - 0.12, { rotationX: -50, rotationY: it.ry * 2 }, 0.55, 'back.out(1.3)');
+        return o;
+      });
+      // "입체로": 세 장이 차례로 한 바퀴
+      const tw = W(2, 5) - 0.05;
+      cards.forEach((o, k) => tl.to(o, { rotationY: `+=360`, duration: 0.7, ease: 'power2.inOut' }, tw + k * 0.08));
+      // 카메라 궤도: 가운데 카드는 앞으로, 양옆은 뒤로 — 시차가 생겨 깊이가 보임
+      const t4 = S(3) - 0.1;
+      tl.to(cards[1], { z: 240, duration: 0.8, ease: 'power2.inOut' }, t4);
+      tl.to([cards[0], cards[2]], { z: -420, duration: 0.8, ease: 'power2.inOut' }, t4);
+      camMove(t4, { rotationY: -24, rotationX: 8 }, Math.max(0.8, W(3, 3) - t4), 'sine.inOut');
+      camMove(W(3, 3), { rotationY: 20, rotationX: 4 }, Math.max(0.8, E(3) - W(3, 3) + 0.2), 'sine.inOut');
+      const chip = box(650, 1340, 330, 84, 'chip mono', front, '<span style="color:' + Y + '">↻</span><span style="font-size:30px">CAMERA ORBIT</span>');
+      gsap.set(chip, { autoAlpha: 0 });
+      show(chip, W(3, 1), { x: 200, y: 0 }, 0.4, 'power3.out');
+      // 퇴장: 바닥 쪽으로 쓰러지며 사라지고 카메라 원위치
+      const tOut = S(4) - 0.15;
+      cards.forEach((o, k) => tl.to(o, { y: 700, rotationX: 80, autoAlpha: 0, duration: 0.45, ease: 'power2.in' }, tOut + k * 0.05));
+      tl.to(chip, { autoAlpha: 0, duration: 0.2 }, tOut);
+      camMove(tOut, { rotationY: 0, rotationX: 0 }, 0.6);
+    }
+
+    // ═════════ 장면 5: "대본에서 목소리, 그리고 장면까지 — 큐브가 돌면서" — 면마다 단계
+    {
+      const fc = (n, l, col = Y) => `<div class="mono" style="font-size:40px;color:${col}">STEP ${n}</div><div style="font-size:92px;font-weight:800;margin-top:14px;letter-spacing:-3px">${l}</div>`;
+      const cb = cube(540, 960, 460, [fc(1, '대본'), fc(2, '목소리'), fc(3, '장면'), '<div style="width:170px;height:170px">' + CHECK.replace('#17181c', Y) + '</div>', '', '']);
+      cb._rx = -14; cb._ry = 24;
+      const sh = shadow(540, 1300, 600);
+      show3d(cb, S(4) - 0.15, { rotationX: -60, rotationY: -60, z: -1400 }, 0.7, 'back.out(1.2)');
+      tl.fromTo(sh, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.5 }, S(4));
+      tl.to(cb, { rotationY: 24 - 90, duration: 0.55, ease: 'back.inOut(1.4)' }, W(4, 1) - 0.12);
+      tl.to(cb, { rotationY: 24 - 180, duration: 0.55, ease: 'back.inOut(1.4)' }, W(4, 3) - 0.12);
+      tl.to(cb, { rotationY: 24 - 270, rotationX: -22, duration: 0.6, ease: 'back.inOut(1.4)' }, W(4, 5) - 0.1);
+      tl.fromTo(cb, { y: 0 }, { y: -24, duration: 0.9, ease: 'sine.inOut', repeat: 3, yoyo: true, immediateRender: false }, S(4) + 0.6);
+      const tOut = S(5) - 0.15;
+      tl.to(cb, { z: -1600, rotationX: 40, autoAlpha: 0, duration: 0.5, ease: 'power2.in' }, tOut);
+      tl.to(sh, { autoAlpha: 0, duration: 0.3 }, tOut);
+    }
+
+    // ═════════ 장면 6: "이 모든 게 정말 한 줄이면 끝납니다" — 큐브 3개 착지 + 한 줄 입력 + 체크
+    let s6 = [];
+    {
+      const names = ['대본', '목소리', '장면'];
+      const cubes = names.map((n, k) => {
+        const lbl = `<div style="font-size:52px;font-weight:800;letter-spacing:-1.5px">${n}</div>`;
+        const c = cube(230 + k * 310, 930, 240, [lbl, '', '', '', '', ''], { colors: [FACE, '#15171d', FACE, '#15171d', Y, '#0e0f13'] });
+        c._rx = -16; c._ry = 18 - k * 18;
+        const sh = shadow(230 + k * 310, 1070, 270); s6.push(c, sh);
+        const t = W(5, Math.min(k, 2)) - 0.1;
+        tl.fromTo(c, { autoAlpha: 1, y: -1300, rotationX: -16, rotationY: 120 }, { y: 0, rotationY: c._ry, duration: 0.6, ease: 'bounce.out', immediateRender: false }, t);
+        tl.set(c, { autoAlpha: 0 }, 0); // 등장 전엔 숨김
+        tl.fromTo(sh, { autoAlpha: 0, scale: 0.3 }, { autoAlpha: 1, scale: 1, duration: 0.5 }, t);
+        return c;
+      });
+      const { o, face } = card3d(110, 1250, 860, 130, { r: 26, depth: 14 });
+      face.innerHTML = '<div style="display:flex;align-items:center;height:126px;padding:0 34px;gap:18px;font-size:40px;font-weight:700"><span style="color:' + Y + ';font-family:JBM,monospace">›</span>인스타그램 꿀팁 3가지 알려줘</div>';
+      o._rx = 10; s6.push(o);
+      show3d(o, W(5, 4) - 0.15, { rotationX: 70, z: -500, y: 200 }, 0.5);
+      const ul = draw('M150 1418 C 400 1426, 700 1410, 930 1420', W(5, 5), 0.3, 10); s6.push(ul);
+      cubes.forEach((c, k) => {
+        const ck = box(230 + k * 310 - 46, 730, 92, 92, '', front, '<div style="width:92px;height:92px;border-radius:50%;background:' + Y + ';padding:18px">' + CHECK + '</div>');
+        gsap.set(ck, { autoAlpha: 0 }); pop(ck, W(5, 6) + k * 0.1, 0, 0.35); s6.push(ck);
+      });
+    }
+
+    // ═════════ 전환 → 장면 7: CTA "댓글에 애니메이션 → 키트"
+    {
+      const tc = wipe(S(6) - 0.3);
+      s6.forEach((o) => tl.set(o, { autoAlpha: 0 }, tc));
+      const kw = extrude('애니메이션', 0, 520, 160, { w: 1080, depth: 28 });
+      tl.fromTo(kw, { autoAlpha: 0, rotationX: -80, y: 60 }, { autoAlpha: 1, rotationX: 0, y: 0, duration: 0.55, ease: 'back.out(1.6)', immediateRender: false }, Math.max(tc + 0.1, W(6, 1) - 0.15));
+      tl.fromTo(kw, { rotationY: -10 }, { rotationY: 10, duration: 2.4, ease: 'sine.inOut', repeat: 1, yoyo: true, immediateRender: false }, W(6, 1) + 0.4);
+      // 댓글 창
+      const { o, face } = card3d(110, 780, 860, 210, { r: 28, bg: '#fff', border: '#e3e5ea', edge: '#9ba0ab' });
+      o._rx = 8;
+      face.innerHTML = '<div style="display:flex;align-items:center;gap:22px;height:206px;padding:0 34px;color:#17181c">' +
+        '<div style="width:74px;height:74px;border-radius:50%;background:#d9dce3;flex:none"></div>' +
+        '<div class="ct" style="flex:1;height:86px;border-radius:43px;background:#f1f2f5;display:flex;align-items:center;padding:0 30px;font-size:40px;font-weight:700;color:#9aa0ab">댓글 달기...</div>' +
+        '<div class="go" style="width:120px;height:72px;border-radius:18px;background:#c9d3ff;color:#fff;font-size:34px;font-weight:800;display:flex;align-items:center;justify-content:center">게시</div></div>';
+      show3d(o, tc + 0.1, { rotationX: 40 }, 0.5);
+      const ct = face.querySelector('.ct'), go = face.querySelector('.go');
+      tl.set(ct, { textContent: '애니메이션', color: '#17181c' }, W(6, 1) + 0.1);
+      tl.to(go, { backgroundColor: BLUE, duration: 0.15 }, W(6, 1) + 0.2);
+      tl.to(go, { scale: 0.88, duration: 0.07, yoyo: true, repeat: 1 }, W(6, 2));
+      // 선물 큐브 + DM 카드
+      const GIFT = '<svg width="130" height="130" viewBox="0 0 130 130"><rect x="14" y="52" width="102" height="66" rx="8" fill="#5B8CFF"/><rect x="8" y="36" width="114" height="24" rx="6" fill="#3d6be0"/><rect x="56" y="36" width="18" height="82" fill="#FFD24A"/><path d="M65 36c-10-22-38-22-34-6 3 9 22 7 34 6zM65 36c10-22 38-22 34-6-3 9-22 7-34 6z" fill="none" stroke="#FFD24A" stroke-width="8" stroke-linejoin="round"/></svg>';
+      const gift = cube(300, 1300, 230, [GIFT, '<div style="font-size:44px;font-weight:800;color:#17181c">KIT</div>', GIFT, '<div style="font-size:44px;font-weight:800;color:#17181c">KIT</div>', '', ''],
+        { colors: ['#fff', Y, '#fff', Y, BLUE, '#0e0f13'] });
+      gift._rx = -14; gift._ry = 20;
+      const gsh = shadow(300, 1440, 280);
+      show3d(gift, W(6, 3) - 0.15, { rotationY: -160, z: -1200 }, 0.6, 'back.out(1.3)');
+      tl.fromTo(gsh, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.4 }, W(6, 3));
+      tl.to(gift, { rotationY: 20 - 360, duration: 2.6, ease: 'power1.inOut' }, W(6, 3) + 0.5);
+      const dm = card3d(460, 1215, 520, 170, { r: 26 });
+      dm.face.innerHTML = '<div style="padding:28px 32px"><div style="font-size:38px;font-weight:800">제작 키트 + 사용 방법</div><div class="mono" style="font-size:26px;color:' + Y + ';margin-top:14px">DM 전송됨 ✓</div></div>';
+      dm.o._ry = -12;
+      show3d(dm.o, W(6, 4) - 0.05, { x: 300, rotationY: -70 }, 0.55, 'back.out(1.4)');
+    }
+
+    window.__timelines = window.__timelines || {};
+    window.__timelines['main'] = tl;
+  })();
+  </script>
+</body>
+</html>

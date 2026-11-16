@@ -1,0 +1,32 @@
+{
+ "fps": 30,
+ "lead": 0.4,
+ "rate": 6.4,
+ "gap": 0.34,
+ "tail": 2.0,
+ "voiceVol": 1,
+ "sfxGain": 0.8,
+ "sttPrompt": "3D, 클로드 코드, 큐브, 애니메이션, 키트",
+ "sentences": [
+  { "id": "S01", "chap": "01 · 3D 모드", "step": "", "text": "만약 *3D로* 만들고 싶다면 / 한마디만 *더* 하면 됩니다.", "poses": [] },
+  { "id": "S02", "chap": "01 · 3D 모드", "step": "", "text": "*“3D로* *만들어줘”* / 이렇게요.", "poses": [] },
+  { "id": "S03", "chap": "02 · 입체 장면", "step": "", "text": "그러면 글자도, 카드도, *화면도* / 전부 *입체로* 움직입니다.", "poses": [] },
+  { "id": "S04", "chap": "02 · 입체 장면", "step": "", "text": "카메라가 *천천히* 돌면서 / 장면에 *깊이가* 생기고요.", "poses": [] },
+  { "id": "S05", "chap": "03 · 큐브 전환", "step": "", "text": "대본에서 목소리, / 그리고 *장면까지* / *큐브가* 돌면서 넘어가죠.", "poses": [] },
+  { "id": "S06", "chap": "04 · 한 줄이면 끝", "step": "", "text": "이 모든 게 / 정말 *한* *줄이면* 끝납니다.", "poses": [] },
+  { "id": "S07", "chap": "05 · 받는 법", "step": "", "text": "댓글에 *애니메이션* 남겨주시면 / *키트를* 보내드릴게요.", "poses": [] }
+ ],
+ "sfx": [
+  { "s": 0, "w": 1, "off": -0.12, "name": "whoosh_air", "vol": 0.45 },
+  { "s": 1, "w": 0, "off": 0, "name": "typing_laptop", "vol": 0.35, "until": "end" },
+  { "s": 1, "w": -1, "off": 0.1, "name": "click_select", "vol": 0.55 },
+  { "s": 2, "w": 1, "off": 0, "name": "pop_light", "vol": 0.45 },
+  { "s": 2, "w": 5, "off": 0, "name": "swipe_zoom", "vol": 0.45 },
+  { "s": 3, "w": 0, "off": 0, "name": "sweep_short", "vol": 0.35 },
+  { "s": 4, "w": 1, "off": -0.05, "name": "tech_slide", "vol": 0.4 },
+  { "s": 4, "w": 3, "off": -0.05, "name": "tech_slide", "vol": 0.4 },
+  { "s": 5, "w": 6, "off": 0, "name": "confirm", "vol": 0.45 },
+  { "s": 6, "w": 1, "off": 0, "name": "pop_bubble", "vol": 0.5 },
+  { "s": 6, "w": 3, "off": 0, "name": "positive", "vol": 0.45 }
+ ]
+}

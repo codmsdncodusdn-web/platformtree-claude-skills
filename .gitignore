@@ -12,3 +12,9 @@
 node_modules/
 .DS_Store
 Thumbs.db
+
+# anim-reel: 스킬에 포함하는 CC0 효과음은 올린다
+!plugins/anim-reel/skills/anim-reel/styles/*/sfx/openverse/*.mp3
+# 릴스 작업 폴더·렌더 결과
+릴스/
+out/
