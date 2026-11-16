@@ -13,7 +13,28 @@ Claude에게 말 한마디로 영상 편집을 맡기는 스킬 모음입니다.
 
 Claude에 주제를 한 줄 적으면 대본을 쓰고, 목소리를 만들고, 장면마다 애니메이션을 붙여 세로 릴스(1080×1920 MP4)로 렌더합니다. **Windows·Mac 모두 동작**하고 API 키가 필요 없습니다.
 
-## 1. 설치 (명령 한 줄)
+## 1. 설치
+
+### 방법 1. Claude 앱에 이 저장소 링크 주기 (추천, 가장 쉬움)
+
+Claude 데스크톱 앱 → **Code** 탭 → **로컬**로 아무 폴더나 연결한 뒤 아래 문장을 그대로 보내세요.
+
+```
+https://github.com/codmsdncodusdn-web/platformtree-claude-skills 에 있는 anim-reel 스킬을 내 컴퓨터에 설치해줘. README의 "Claude가 설치할 때" 순서대로 해줘.
+```
+
+Claude가 이 README를 읽고 설치를 끝까지 해 줍니다. 중간에 명령 실행 허락을 물으면 **허용**을 누르세요. 끝나면 **새 대화를 열면** 바로 쓸 수 있어요.
+
+#### Claude가 설치할 때 (Claude가 따르는 순서)
+
+1. 운영체제를 확인한다.
+2. 설치 스크립트를 실행한다. 3~5분 걸리니 시간 제한을 넉넉히(10분) 두고, 출력은 사용자에게 진행 상황으로 짧게 알려 준다.
+   - Windows: `powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://raw.githubusercontent.com/codmsdncodusdn-web/platformtree-claude-skills/main/install-anim-reel.ps1 | iex"`
+   - Mac: `curl -fsSL https://raw.githubusercontent.com/codmsdncodusdn-web/platformtree-claude-skills/main/install-anim-reel.sh | bash`
+3. 출력 끝에 `🎉 준비 완료`와 `설치 완료!`가 있으면 성공. ❌가 있으면 `node ~/.claude/skills/anim-reel/tools/reel.mjs doctor --fix`를 한 번 더 실행한다(Windows에서 `node`를 못 찾으면 `%USERPROFILE%\.platformtree-skills\node\node.exe`, Mac은 `~/.platformtree-skills/node/bin/node`).
+4. 사용자에게 알린다: "설치 끝! **새 대화**를 열고 릴스 작업 폴더를 연결한 뒤 `인스타그램 꿀팁 3가지 애니메이션 릴스로 만들어줘`처럼 말해 보세요." (스킬은 새 대화부터 보인다. 안 보이면 앱을 껐다 켜기.)
+
+### 방법 2. 명령 한 줄 직접 실행
 
 **Windows**: PowerShell을 열고 붙여넣기
 
@@ -36,9 +57,7 @@ curl -fsSL https://raw.githubusercontent.com/codmsdncodusdn-web/platformtree-cla
 | FFmpeg | 영상·소리 처리 (이미 있으면 그걸 써요) |
 | uv + edge-tts | AI 목소리 생성 (파이썬을 따로 설치할 필요 없음) |
 
-끝나면 **Claude 앱을 껐다 켜 주세요.** 업데이트할 때도 같은 명령을 다시 실행하면 됩니다.
-
-> 명령을 붙여넣기 어렵다면 Claude 앱에 "이 명령 실행해줘"라며 위 한 줄을 붙여넣어도 됩니다.
+끝나면 **Claude 앱을 껐다 켜 주세요.** 업데이트할 때도 같은 방법(1 또는 2)을 다시 하면 됩니다.
 
 ## 2. 작업 폴더 연결
 
